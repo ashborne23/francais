@@ -184,6 +184,9 @@ button:focus-visible,input:focus-visible,a:focus-visible,.tab:focus-visible{outl
 .mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
 .m{border:1px solid var(--rule);background:var(--card);padding:11px 12px}
 .m-t{font-family:var(--serif);font-size:14.5px;line-height:1.25}
+.m-t a{color:var(--bic);text-decoration:none;border-bottom:1px solid rgba(43,58,140,.3)}
+.m-t a:hover{border-bottom-color:var(--bic)}
+.m:hover{border-color:var(--rule-2);box-shadow:0 1px 0 var(--rule-2)}
 .m-meta{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;color:var(--muted);margin:4px 0 6px;text-transform:uppercase}
 .m-d{font-size:12px;color:var(--muted);line-height:1.4}
 .mlinks{display:flex;gap:11px;flex-wrap:wrap;margin-top:9px;padding-top:8px;border-top:1px dotted var(--rule)}
@@ -1325,6 +1328,13 @@ function paneVocab(){
  </div>
  <p class="foot" style="margin-top:14px"><b>How review works.</b> Five boxes. Get a card right and it moves up — you'll see it again in 1, 3, 7, then 21 days. Get it wrong and it drops to box 0 and comes back today. Twenty cards a day is about eight minutes, and it counts as Reading in your daily log.</p>`;
 }
+function mPrimary(m){
+ const bare=encodeURIComponent(m.t.replace(/\s*[—–-]\s*/g," ").replace(/\(.*?\)/g,"").trim());
+ if(m.u)return m.u;
+ if(m.k==="Song")return "https://open.spotify.com/search/"+bare;
+ if(m.k==="Film"||m.k==="Series")return "https://www.justwatch.com/in/search?q="+bare;
+ return "https://www.youtube.com/results?search_query="+bare;
+}
 function mLinks(m){
  const q=encodeURIComponent(m.t.replace(/\s*[—–-]\s*/g," ").replace(/\(.*?\)/g,"").trim()+
    (m.k==="Song"?"":" film français"));
@@ -1351,7 +1361,7 @@ function paneMedia(){
  <div class="filters">${["ALL","A1","A2","B1","B2"].map(f=>`<button class="chip" data-m="${f}" aria-pressed="${mFilter===f}">${f}</button>`).join("")}</div>
  <div class="mgrid">
  ${MEDIA.filter(m=>mFilter==="ALL"||m.lv===mFilter).map(m=>`<div class="m">
-   <div class="m-t">${esc(m.t)}</div>
+   <div class="m-t"><a href="${mPrimary(m)}" target="_blank" rel="noopener">${esc(m.t)}</a></div>
    <div class="m-meta">${m.lv} · ${esc(m.k)}</div>
    <div class="m-d">${esc(m.d)}</div>
    ${mLinks(m)}</div>`).join("")}

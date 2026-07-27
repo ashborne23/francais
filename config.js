@@ -19,6 +19,6 @@
 ------------------------------------------------------------------- */
 
 window.FL_CONFIG = {
-  SUPABASE_URL: "",
-  SUPABASE_ANON_KEY: ""
+  SUPABASE_URL: "https://kfxlsuurdgwmvnhymuom.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_Wk_xyaW7_8SsPwAfqMcO9A_JVUneglq"
 };

@@ -159,6 +159,13 @@ button:focus-visible,input:focus-visible,a:focus-visible,.tab:focus-visible{outl
 .score{display:flex;gap:20px;margin-bottom:14px;flex-wrap:wrap}
 .score div span{font-family:var(--mono);font-size:19px;display:block;font-weight:600}
 
+.qlinks{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;padding-top:9px;border-top:1px dotted var(--rule-2)}
+.qlinks a{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--bic);text-decoration:none;border-bottom:1px solid rgba(43,58,140,.35)}
+.qlinks a:hover{border-bottom-color:var(--bic)}
+.drillbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;padding:10px 12px;margin-bottom:16px;background:var(--card);border:1px solid var(--rule)}
+.drillbar a{font-size:12.5px;color:var(--bic);text-decoration:none;border-bottom:1px solid rgba(43,58,140,.3)}
+.drillbar a:hover{border-bottom-color:var(--bic)}
+@media(hover:none){.qlinks a,.drillbar a{padding:6px 0;display:inline-block}}
 /* diagnostics */
 .bars{max-width:640px}
 .brow{display:grid;grid-template-columns:1fr 118px 46px;gap:10px;align-items:center;padding:6px 0;border-bottom:1px dotted var(--rule)}
@@ -179,6 +186,10 @@ button:focus-visible,input:focus-visible,a:focus-visible,.tab:focus-visible{outl
 .m-t{font-family:var(--serif);font-size:14.5px;line-height:1.25}
 .m-meta{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;color:var(--muted);margin:4px 0 6px;text-transform:uppercase}
 .m-d{font-size:12px;color:var(--muted);line-height:1.4}
+.mlinks{display:flex;gap:11px;flex-wrap:wrap;margin-top:9px;padding-top:8px;border-top:1px dotted var(--rule)}
+.mlinks a{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--bic);text-decoration:none;border-bottom:1px solid rgba(43,58,140,.3)}
+.mlinks a:hover{border-bottom-color:var(--bic)}
+@media(hover:none){.mlinks a{padding:6px 0;display:inline-block}}
 .filters{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
 .chip{font-family:var(--mono);font-size:10px;letter-spacing:.1em;padding:5px 10px;border:1px solid var(--rule-2);background:var(--card);color:var(--muted);cursor:pointer;text-transform:uppercase}
 .chip[aria-pressed="true"]{background:var(--bic);color:#fff;border-color:var(--bic)}
@@ -976,6 +987,41 @@ const Q=[
 ["B2 · connecteurs","___ les difficultés, nous avons réussi.",["Malgré","Bien que","Puisque"],0,"Malgré takes a noun; bien que takes a clause."]
 ];
 
+const LINKQ={
+"A1 · être / avoir":"être avoir présent",
+"A1 · articles & genre":"articles définis indéfinis genre",
+"A1 · verbes -ER":"verbes en -er au présent",
+"A1 · négation":"négation ne pas",
+"A1 · questions":"poser une question est-ce que",
+"A1 · aller / faire":"aller faire présent",
+"A1 · nombres & heure":"dire l'heure",
+"A2 · passé composé (avoir)":"passé composé avoir",
+"A2 · passé composé (être)":"passé composé être accord",
+"A2 · imparfait":"imparfait",
+"A2 · futur":"futur simple futur proche",
+"A2 · partitifs":"articles partitifs du de la",
+"A2 · verbes pronominaux":"verbes pronominaux accord",
+"A2 · pronoms COD / COI":"pronoms objet direct indirect",
+"A2 · comparer":"comparatif superlatif",
+"B1 · imparfait vs PC":"imparfait ou passé composé",
+"B1 · pronoms relatifs":"pronoms relatifs qui que dont où",
+"B1 · y et en":"pronoms y et en",
+"B1 · conditionnel / si":"conditionnel phrases avec si",
+"B1 · subjonctif":"subjonctif présent",
+"B2 · conditionnel passé":"conditionnel passé",
+"B2 · infinitif passé":"infinitif passé après avoir",
+"B2 · passif":"voix passive",
+"B2 · registre":"registre de langue soutenu familier",
+"B2 · idiomes":"expressions idiomatiques",
+"B2 · connecteurs":"connecteurs logiques malgré bien que"
+};
+function lessonLinks(topic){
+ const q=encodeURIComponent(LINKQ[topic]||topic.replace(/^[AB][12] · /,""));
+ return '<div class="qlinks">'+
+  '<a href="https://www.lawlessfrench.com/?s='+q+'" target="_blank" rel="noopener">Lesson on Lawless French</a>'+
+  '<a href="https://www.francaisfacile.com/" target="_blank" rel="noopener">More drills</a>'+
+  '<a href="https://leconjugueur.lefigaro.fr/" target="_blank" rel="noopener">Conjugator</a></div>';
+}
 const LEVELS=[
  {n:"A1",h:90,label:"Débutant"},
  {n:"A2",h:200,label:"Élémentaire"},
@@ -1143,6 +1189,15 @@ function panePractice(){
    <div><span class="lbl">Topics seen</span><span>${Object.keys(S.quiz).length}</span></div>
  </div>
  <div class="filters">${["A1","A2","B1","B2","ALL"].map(f=>`<button class="chip" data-q="${f}" aria-pressed="${qFilter===f}">${f==="A1"?"A1 review":f}</button>`).join("")}</div>
+ <div class="drillbar">
+   <span class="lbl">Drill elsewhere</span>
+   <a href="${R.ff.u}" target="_blank" rel="noopener">Français Facile</a>
+   <a href="${R.law.u}" target="_blank" rel="noopener">Lawless French</a>
+   <a href="${R.fle.u}" target="_blank" rel="noopener">Le Point du FLE</a>
+   <a href="${R.kwi.u}" target="_blank" rel="noopener">Kwiziq</a>
+   <a href="${R.tv5.u}" target="_blank" rel="noopener">TV5MONDE</a>
+   <a href="${R.con.u}" target="_blank" rel="noopener">Le Conjugueur</a>
+ </div>
  <div id="qbox">${cur===null?`<div class="q"><p class="fr" style="font-size:16px;margin:0 0 14px">Prêt ? Drilling <b>${qFilter}</b>. The bank pulls hardest from topics you've been getting wrong.</p><button id="start-q">Start drilling</button></div>`:renderQ()}</div>`;
 }
 
@@ -1270,15 +1325,36 @@ function paneVocab(){
  </div>
  <p class="foot" style="margin-top:14px"><b>How review works.</b> Five boxes. Get a card right and it moves up — you'll see it again in 1, 3, 7, then 21 days. Get it wrong and it drops to box 0 and comes back today. Twenty cards a day is about eight minutes, and it counts as Reading in your daily log.</p>`;
 }
+function mLinks(m){
+ const q=encodeURIComponent(m.t.replace(/\s*[—–-]\s*/g," ").replace(/\(.*?\)/g,"").trim()+
+   (m.k==="Song"?"":" film français"));
+ const bare=encodeURIComponent(m.t.replace(/\s*[—–-]\s*/g," ").replace(/\(.*?\)/g,"").trim());
+ const L=[];
+ if(m.u)L.push('<a href="'+m.u+'" target="_blank" rel="noopener">Open</a>');
+ if(m.k==="Film"||m.k==="Series"){
+   L.push('<a href="https://www.justwatch.com/in/search?q='+bare+'" target="_blank" rel="noopener">Where to watch</a>');
+   L.push('<a href="https://www.imdb.com/find/?q='+bare+'" target="_blank" rel="noopener">IMDb</a>');
+ }
+ if(m.k==="Song"){
+   L.push('<a href="https://open.spotify.com/search/'+bare+'" target="_blank" rel="noopener">Spotify</a>');
+   L.push('<a href="https://www.youtube.com/results?search_query='+bare+'" target="_blank" rel="noopener">YouTube</a>');
+   L.push('<a href="https://lyricstraining.com/fr" target="_blank" rel="noopener">Lyrics drill</a>');
+ }
+ if(m.k==="Audio"||m.k==="Podcast"||m.k==="News"){
+   if(!m.u)L.push('<a href="https://www.youtube.com/results?search_query='+bare+'" target="_blank" rel="noopener">Find it</a>');
+ }
+ return L.length?'<div class="mlinks">'+L.join("")+'</div>':"";
+}
 function paneMedia(){
  return `<h3 class="sec">Films, séries, musique — graded</h3>
  <p class="sec-note">Watch one level below where you think you are. Subtitles in French, not English — English subtitles turn listening practice into reading practice.</p>
  <div class="filters">${["ALL","A1","A2","B1","B2"].map(f=>`<button class="chip" data-m="${f}" aria-pressed="${mFilter===f}">${f}</button>`).join("")}</div>
  <div class="mgrid">
  ${MEDIA.filter(m=>mFilter==="ALL"||m.lv===mFilter).map(m=>`<div class="m">
-   <div class="m-t">${m.u?`<a href="${m.u}" target="_blank" rel="noopener" style="color:var(--bic);text-decoration:none">${esc(m.t)}</a>`:esc(m.t)}</div>
+   <div class="m-t">${esc(m.t)}</div>
    <div class="m-meta">${m.lv} · ${esc(m.k)}</div>
-   <div class="m-d">${esc(m.d)}</div></div>`).join("")}
+   <div class="m-d">${esc(m.d)}</div>
+   ${mLinks(m)}</div>`).join("")}
  </div>
  <div class="hr"></div>
  <div class="res"><span class="t">Drills</span><a href="${R.lyrics.u}" target="_blank" rel="noopener">${R.lyrics.t}</a><span class="d"> — ${R.lyrics.d}</span></div>
@@ -1393,7 +1469,7 @@ function wireQ(){
    const q=Q[cur],pick=+b.dataset.opt,ok=pick===q[3];
    document.querySelectorAll("[data-opt]").forEach((x,i)=>{if(i===q[3])x.classList.add("right");else if(i===pick)x.classList.add("wrong")});
    const rec=S.quiz[q[0]]||{r:0,w:0};ok?rec.r++:rec.w++;S.quiz[q[0]]=rec;save();
-   document.getElementById("expl").innerHTML=`<div class="expl"><b>${ok?"Oui.":"Non — "+esc(q[2][q[3]])+"."}</b> ${esc(q[4])}</div>
+   document.getElementById("expl").innerHTML=`<div class="expl"><b>${ok?"Oui.":"Non — "+esc(q[2][q[3]])+"."}</b> ${esc(q[4])}${lessonLinks(q[0])}</div>
      <button id="next-q" style="margin-top:12px">Next question</button>
      <button class="ghost" id="stop-q" style="margin-top:12px;margin-left:6px">Done</button>`;
    document.getElementById("next-q").onclick=()=>{pickQ();document.getElementById("qbox").innerHTML=renderQ();wireQ()};

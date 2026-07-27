@@ -79,33 +79,56 @@
   }
   function controls() {
     if (!session) {
-      return '<span class="tbar-b"><input type="email" id="sy-mail" placeholder="you@example.com" autocomplete="email">' +
-             '<button type="button" id="sy-in">Send sign-in link</button></span>';
+      return '<span class="tbar-b">' +
+             '<input type="email" id="sy-mail" placeholder="you@example.com" autocomplete="username">' +
+             '<input type="password" id="sy-pass" placeholder="password" autocomplete="current-password">' +
+             '<button type="button" id="sy-in">Sign in</button>' +
+             '<button type="button" id="sy-up">Create account</button></span>';
     }
     return '<span class="tbar-b"><button type="button" id="sy-now">Sync now</button>' +
            '<button type="button" id="sy-out">Sign out</button></span>';
   }
   function wire() {
     const i = document.getElementById("sy-in");
-    if (i) i.onclick = signIn;
+    if (i) i.onclick = () => credentials(false);
+    const u = document.getElementById("sy-up");
+    if (u) u.onclick = () => credentials(true);
+    const p = document.getElementById("sy-pass");
+    if (p) p.onkeydown = (e) => { if (e.key === "Enter") credentials(false); };
     const n = document.getElementById("sy-now");
     if (n) n.onclick = () => syncNow(true);
     const o = document.getElementById("sy-out");
     if (o) o.onclick = async () => { await sb.auth.signOut(); session = null; status("Signed out. Progress stays on this device."); };
   }
 
-  async function signIn() {
-    const el = document.getElementById("sy-mail");
-    const email = (el && el.value || "").trim();
-    if (!email) { el && el.focus(); return; }
-    status("Sending…");
-    const { error } = await sb.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: location.href.split("#")[0] }
-    });
-    status(error ? "Could not send the link: " + error.message
-                 : "Check your email for a sign-in link, then open it on this device.",
-           error ? "warn" : "");
+  async function credentials(isNew) {
+    const em = document.getElementById("sy-mail");
+    const pw = document.getElementById("sy-pass");
+    const email = (em && em.value || "").trim();
+    const password = (pw && pw.value || "");
+    if (!email) { em && em.focus(); return; }
+    if (password.length < 6) { status("Password needs at least 6 characters.", "warn"); return; }
+
+    status(isNew ? "Creating account…" : "Signing in…");
+    const fn = isNew ? "signUp" : "signInWithPassword";
+    const { data, error } = await sb.auth[fn]({ email, password });
+
+    if (error) {
+      let msg = error.message;
+      if (/invalid login credentials/i.test(msg))
+        msg = "Wrong email or password. If this is your first time on this device, use Create account only once — then Sign in everywhere else.";
+      if (/already registered|user already/i.test(msg))
+        msg = "That account exists — use Sign in instead.";
+      status(msg, "warn");
+      return;
+    }
+    if (!data.session) {
+      status("Account created, but Supabase is waiting on email confirmation. Turn off " +
+             "Authentication → Sign In / Providers → Confirm email, then sign in.", "warn");
+      return;
+    }
+    session = data.session;
+    syncNow(false);
   }
 
   async function syncNow(manual) {

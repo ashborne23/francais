@@ -14,6 +14,6 @@
 ------------------------------------------------------------------- */
 
 window.FL_CONFIG = {
-  SUPABASE_URL: "",
-  SUPABASE_ANON_KEY: ""
+  SUPABASE_URL: "sb_publishable_Wk_xyaW7_8SsPwAfqMcO9A_JVUneglq",
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtmeGxzdXVyZGd3bXZuaHltdW9tIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NTEyODM0MywiZXhwIjoyMTAwNzA0MzQzfQ.K55lsf-PNTXKrQDYTLLpVEnbeJJk9MPVmgOu9Q53KTg"
 };

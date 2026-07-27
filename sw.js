@@ -1,5 +1,5 @@
 /* offline cache for the French lab */
-const CACHE = "french-lab-v3";
+const CACHE = "french-lab-v5";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./config.js", "./sync.js", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 
 self.addEventListener("install", e => {

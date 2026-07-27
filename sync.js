@@ -20,14 +20,62 @@
 (function () {
   const KEY = "french_lab_v1";
   const STAMP = "french_lab_stamp";
-  const cfg = window.FL_CONFIG || {};
   const bar = document.getElementById("syncbar");
   if (!bar) return;
 
-  if (!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) {
-    bar.innerHTML = '<span class="tbar-s">Sync is off — add your Supabase keys to <code>config.js</code> to turn it on.</span>';
+  if (typeof window.FL_CONFIG === "undefined") {
+    bar.innerHTML = '<span class="tbar-s warn">Sync off: <code>config.js</code> did not load. ' +
+      'Check it sits beside <code>index.html</code> in the repository root, then hard-refresh.</span>';
     return;
   }
+  const cfg = window.FL_CONFIG || {};
+  const u = (cfg.SUPABASE_URL || "").trim(), k = (cfg.SUPABASE_ANON_KEY || "").trim();
+
+  if (!u && !k) {
+    bar.innerHTML = '<span class="tbar-s warn">Sync off: <code>config.js</code> loaded but both keys are still blank. ' +
+      'The browser may be serving a cached copy — open <code>config.js</code> on your site with <code>?v=9</code> ' +
+      'on the end of the address to see what is actually live.</span>';
+    return;
+  }
+  if (!u || !k) {
+    bar.innerHTML = '<span class="tbar-s warn">Sync off: only ' + (u ? "SUPABASE_URL" : "SUPABASE_ANON_KEY") +
+      ' is filled in. Both values are needed.</span>';
+    return;
+  }
+  if (/^sb_(publishable|secret)_/.test(u) || /^eyJ/.test(u)) {
+    bar.innerHTML = '<span class="tbar-s warn">Sync off: a key has been pasted into SUPABASE_URL. ' +
+      'That field wants the address <code>https://yourproject.supabase.co</code>; the key belongs in ' +
+      'SUPABASE_ANON_KEY. Looks like the two values are swapped.</span>';
+    return;
+  }
+  if (!/^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/i.test(u)) {
+    bar.innerHTML = '<span class="tbar-s warn">Sync off: SUPABASE_URL looks wrong — it should be just ' +
+      '<code>https://yourproject.supabase.co</code> with nothing after it. Currently: <code>' +
+      u.replace(/[<>&]/g, "") + '</code></span>';
+    return;
+  }
+  // Refuse to run with a secret key. This key would bypass every RLS policy,
+  // and this file is served publicly.
+  function jwtRole(tok) {
+    try { return JSON.parse(atob(tok.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).role || ""; }
+    catch (e) { return ""; }
+  }
+  const isSecret = /^sb_secret_/.test(k) || (/^eyJ/.test(k) && jwtRole(k) === "service_role");
+  if (isSecret) {
+    bar.innerHTML = '<span class="tbar-s warn"><b>Stopped: that is a secret key.</b> ' +
+      'It bypasses every security policy and this file is public. ' +
+      'Rotate it in Project Settings → API Keys immediately, then use the ' +
+      '<b>publishable</b> key (<code>sb_publishable_…</code>) or the <b>anon public</b> key instead.</span>';
+    return;
+  }
+  if (!/^sb_publishable_/.test(k) && !/^eyJ/.test(k)) {
+    bar.innerHTML = '<span class="tbar-s warn">Sync off: that does not look like a client key. ' +
+      'It should start with <code>sb_publishable_</code> or <code>eyJ</code>, and come from ' +
+      'Project Settings → API Keys.</span>';
+    return;
+  }
+  cfg.SUPABASE_URL = u.replace(/\/$/, "");
+  cfg.SUPABASE_ANON_KEY = k;
 
   const readLocal = () => { try { return JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { return null; } };
   const writeLocal = (o) => { try { localStorage.setItem(KEY, JSON.stringify(o)); localStorage.setItem(STAMP, new Date().toISOString()); } catch (e) {} };

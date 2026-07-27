@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Français">
+<meta name="theme-color" content="#101A26">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<title>Cahier de français — A1 to B2</title>
+
+<script>
+/* storage shim: uses Claude's storage when embedded, localStorage when standalone,
+   memory as a last resort (e.g. file:// on iOS, where WebKit may block localStorage) */
+(function(){
+  if(window.storage&&typeof window.storage.get==="function"){window.__mode="claude";return;}
+  var mem={},LS=null;
+  try{var t="__probe";localStorage.setItem(t,"1");localStorage.removeItem(t);LS=localStorage;}catch(e){LS=null;}
+  window.__mode=LS?"local":"memory";
+  window.storage={
+    get:function(k){return new Promise(function(res,rej){
+      var v=LS?LS.getItem(k):mem[k];
+      if(v===null||v===undefined)rej(new Error("not found"));else res({key:k,value:v});});},
+    set:function(k,v){return new Promise(function(res){if(LS)LS.setItem(k,v);else mem[k]=v;res({key:k,value:v});});},
+    delete:function(k){return new Promise(function(res){if(LS)LS.removeItem(k);else delete mem[k];res({key:k,deleted:true});});},
+    list:function(){return new Promise(function(res){res({keys:LS?Object.keys(LS):Object.keys(mem)});});}
+  };
+})();
+</script>
+
+<style>
+:root{
+  --paper:#FCFCF8;
+  --card:#FFFFFF;
+  --seyes:#C3D0EA;
+  --seyes-soft:#E4EAF6;
+  --margin:#DE8891;
+  --bic:#2B3A8C;
+  --ink:#18192B;
+  --muted:#6C7180;
+  --rule:#E2E2D9;
+  --rule-2:#C8CABF;
+  --vert:#2C7A57;
+  --rouge:#B3323F;
+  --or:#B8892B;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+}
+#app{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;border:1px solid var(--rule-2);-webkit-font-smoothing:antialiased}
+#app *,#app *::before,#app *::after{box-sizing:border-box}
+.boot{padding:60px 20px;text-align:center;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.fr{font-family:var(--serif)}
+.lbl{font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}
+
+/* header on Seyès-ruled paper */
+.head{
+  position:relative;padding:22px 24px 20px 40px;background:
+    linear-gradient(var(--seyes-soft) 1px,transparent 1px) 0 0/100% 22px,
+    var(--card);
+  border-bottom:1px solid var(--rule-2);overflow:hidden;
+}
+.head::before{content:"";position:absolute;left:26px;top:0;bottom:0;width:1.5px;background:var(--margin)}
+.head-row{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;position:relative}
+.title{font-family:var(--serif);font-size:27px;line-height:1.1;letter-spacing:-.01em;margin:2px 0 4px}
+.sub{font-size:12.5px;color:var(--muted)}
+.now{text-align:right}
+.now-lvl{font-family:var(--mono);font-size:34px;font-weight:700;color:var(--bic);line-height:1;letter-spacing:-.02em}
+.now-note{font-size:11px;color:var(--muted);margin-top:3px}
+
+/* ladder */
+.ladder{display:flex;gap:2px;margin-top:16px;position:relative}
+.rung{flex:1;min-width:0}
+.rung-bar{height:9px;background:#E8E8E0;position:relative;overflow:hidden}
+.rung-fill{position:absolute;inset:0 auto 0 0;background:var(--bic);opacity:.85}
+.rung.done .rung-fill{background:var(--vert)}
+.rung-cap{display:flex;justify-content:space-between;margin-top:5px;font-family:var(--mono);font-size:9.5px;color:var(--muted);letter-spacing:.06em}
+.rung-cap b{color:var(--ink);font-weight:600}
+
+/* tabs */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--rule-2);background:var(--card);overflow-x:auto}
+.tab{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;padding:12px 16px;border:0;border-bottom:2px solid transparent;background:none;color:var(--muted);cursor:pointer;white-space:nowrap}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--bic);border-bottom-color:var(--bic)}
+.pane{padding:20px 24px}
+.pane[hidden]{display:none}
+
+h3.sec{font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;font-weight:500}
+h3.sec + .sec-note{margin-top:-6px}
+.sec-note{font-size:12px;color:var(--muted);margin:0 0 12px}
+.hr{height:1px;background:var(--rule);margin:22px 0}
+
+/* today */
+.grid2{display:grid;grid-template-columns:1.15fr .85fr;gap:24px}
+.timer-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.tcell{border:1px solid var(--rule);background:var(--card);padding:9px 8px 10px;text-align:center}
+.tcell .lbl{display:block;margin-bottom:6px;font-size:9px;letter-spacing:.08em}
+.tcell input{width:100%;font-family:var(--mono);font-size:16px;text-align:center;border:0;border-bottom:1px solid var(--rule-2);padding:2px 0 3px;background:none;color:var(--ink)}
+.tcell.out{background:#FBF7F0;border-color:#E8DCC6}
+.tcell.out .lbl{color:var(--or)}
+.dayline{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
+.prog{flex:1;min-width:160px;height:22px;background:#EDEDE5;position:relative;border:1px solid var(--rule-2)}
+.prog-fill{position:absolute;inset:0 auto 0 0;background:var(--bic);opacity:.8}
+.prog-txt{position:relative;font-family:var(--mono);font-size:10.5px;line-height:20px;padding-left:8px;color:var(--ink);mix-blend-mode:normal}
+button{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;padding:8px 14px;border:1px solid var(--ink);background:var(--ink);color:#fff;cursor:pointer}
+button:hover{background:var(--bic);border-color:var(--bic)}
+button.ghost{background:none;color:var(--ink);border-color:var(--rule-2)}
+button.ghost:hover{background:#F0F0EA;color:var(--ink)}
+button:focus-visible,input:focus-visible,a:focus-visible,.tab:focus-visible{outline:2px solid var(--bic);outline-offset:2px}
+.flash{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--vert);opacity:0;transition:opacity .3s}
+.flash.on{opacity:1}
+
+.plan{border-left:2px solid var(--margin);padding-left:14px}
+.plan-item{display:flex;gap:10px;margin-bottom:11px;align-items:baseline}
+.plan-min{font-family:var(--mono);font-size:11px;color:var(--bic);flex:none;width:42px}
+.plan-body{font-size:13px}
+.plan-body a{color:var(--bic)}
+.plan-body .d{display:block;font-size:11.5px;color:var(--muted);margin-top:1px}
+
+/* streak strip */
+.strip{display:flex;gap:2px;margin-top:8px}
+.sq{flex:1;aspect-ratio:1;background:#EAEAE2;min-width:0}
+.sq[data-f="1"]{background:#C9D6EF}
+.sq[data-f="2"]{background:#8FA6DB}
+.sq[data-f="3"]{background:var(--bic)}
+.sq.today{outline:1.5px solid var(--rouge);outline-offset:-1.5px}
+
+/* units */
+.unit{border:1px solid var(--rule);background:var(--card);margin-bottom:9px}
+.unit-h{display:flex;align-items:center;gap:10px;padding:11px 13px;cursor:pointer}
+.unit-n{font-family:var(--mono);font-size:10px;color:var(--muted);width:26px;flex:none}
+.unit-t{flex:1;font-size:13.5px}
+.unit-t .fr{color:var(--bic)}
+.unit-lv{font-family:var(--mono);font-size:9.5px;border:1px solid var(--rule-2);padding:1px 5px;color:var(--muted)}
+.unit-body{padding:0 13px 14px 39px;border-top:1px solid var(--rule);padding-top:12px}
+.unit-body[hidden]{display:none}
+.res{display:block;padding:7px 0;border-bottom:1px dotted var(--rule);font-size:12.5px}
+.res:last-of-type{border-bottom:0}
+.res a{color:var(--bic);text-decoration:none;border-bottom:1px solid rgba(43,58,140,.3)}
+.res a:hover{border-bottom-color:var(--bic)}
+.res .t{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-right:7px}
+.res .d{color:var(--muted);font-size:11.5px}
+.task{margin-top:11px;padding:10px 12px;background:#FBF7F0;border-left:2px solid var(--or);font-size:12.5px}
+.task .lbl{color:var(--or);display:block;margin-bottom:3px}
+
+/* practice */
+.q{border:1px solid var(--rule-2);background:var(--card);padding:18px;max-width:620px}
+.q-top{display:flex;justify-content:space-between;gap:12px;margin-bottom:12px;align-items:baseline}
+.q-txt{font-family:var(--serif);font-size:19px;line-height:1.45;margin-bottom:14px}
+.opt{display:block;width:100%;text-align:left;font-family:var(--serif);font-size:15px;text-transform:none;letter-spacing:0;padding:10px 13px;margin-bottom:6px;background:var(--card);color:var(--ink);border:1px solid var(--rule-2)}
+.opt:hover{background:#F2F4FA;border-color:var(--bic);color:var(--ink)}
+.opt.right{background:#EAF5EF;border-color:var(--vert);color:#1D5A3E}
+.opt.wrong{background:#FBEDEE;border-color:var(--rouge);color:#8A2530}
+.expl{margin-top:12px;padding:11px 13px;background:#F5F6F2;border-left:2px solid var(--bic);font-size:13px}
+.expl b{font-family:var(--serif)}
+.score{display:flex;gap:20px;margin-bottom:14px;flex-wrap:wrap}
+.score div span{font-family:var(--mono);font-size:19px;display:block;font-weight:600}
+
+/* diagnostics */
+.bars{max-width:640px}
+.brow{display:grid;grid-template-columns:1fr 118px 46px;gap:10px;align-items:center;padding:6px 0;border-bottom:1px dotted var(--rule)}
+.bname{font-size:12.5px}
+.btrack{height:7px;background:#EAEAE2}
+.bfill{height:100%;background:var(--vert)}
+.bfill.low{background:var(--rouge)}
+.bfill.mid{background:var(--or)}
+.bpct{font-family:var(--mono);font-size:11px;text-align:right;color:var(--muted)}
+.callout{border:1px solid var(--rule-2);border-left:3px solid var(--rouge);background:var(--card);padding:13px 15px;margin-bottom:10px;font-size:13px}
+.callout b{color:var(--rouge)}
+.callout.ok{border-left-color:var(--vert)}
+.callout.ok b{color:var(--vert)}
+
+/* media */
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.m{border:1px solid var(--rule);background:var(--card);padding:11px 12px}
+.m-t{font-family:var(--serif);font-size:14.5px;line-height:1.25}
+.m-meta{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;color:var(--muted);margin:4px 0 6px;text-transform:uppercase}
+.m-d{font-size:12px;color:var(--muted);line-height:1.4}
+.filters{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
+.chip{font-family:var(--mono);font-size:10px;letter-spacing:.1em;padding:5px 10px;border:1px solid var(--rule-2);background:var(--card);color:var(--muted);cursor:pointer;text-transform:uppercase}
+.chip[aria-pressed="true"]{background:var(--bic);color:#fff;border-color:var(--bic)}
+.foot{font-size:11.5px;color:var(--muted);line-height:1.55}
+
+.fwrap{display:flex;flex-wrap:wrap;gap:5px;max-width:820px}
+.fw{font-family:var(--serif);font-size:14.5px;padding:5px 9px;border:1px solid var(--rule-2);background:var(--card);cursor:pointer;user-select:none;line-height:1.2}
+.fw:hover{border-color:var(--bic);color:var(--bic)}
+.fw.sp{border-bottom:2px solid var(--or)}
+.fw.wr{border-bottom:2px solid var(--bic)}
+.fw.kn{background:#EAF5EF;border-color:#9CCBB2;color:#1D5A3E}
+.rg{font-family:var(--mono);font-size:10px;padding:1px 5px;border-bottom-width:2px;border-bottom-style:solid}
+.rg.s{border-bottom-color:var(--or);color:var(--or)}
+.rg.w{border-bottom-color:var(--bic);color:var(--bic)}
+@media(hover:none){.fw{padding:9px 12px;font-size:16px}}
+/* vocabulary */
+.vcard{text-align:center}
+.vfr{font-family:var(--serif);font-size:31px;line-height:1.25;color:var(--bic);margin:18px 0}
+.ven{font-size:17px;margin-bottom:10px}
+.vex{font-size:15px;color:var(--muted);padding:10px 12px;background:#F5F6F2;border-left:2px solid var(--seyes);text-align:left}
+.vbtns{display:flex;gap:8px;justify-content:center;margin-top:18px}
+.vlist{border-top:1px solid var(--rule);max-width:760px}
+.vrow{display:flex;justify-content:space-between;gap:14px;align-items:baseline;padding:9px 0;border-bottom:1px dotted var(--rule)}
+.vw{font-size:15px;color:var(--bic)}
+.vg{font-size:12.5px;color:var(--muted)}
+.vex2{display:block;font-size:12.5px;color:var(--ink);opacity:.7;margin-top:3px}
+.vbox{font-family:var(--mono);font-size:11px;color:#C4C7BC;letter-spacing:1px;flex:none}
+.vbox.mid{color:var(--or)}
+.vbox.ok{color:var(--vert)}
+.addrow{display:flex;gap:8px;flex-wrap:wrap;max-width:760px}
+.addrow input{flex:1 1 170px;font-family:var(--serif);font-size:14px;padding:9px 10px;border:1px solid var(--rule-2);background:var(--card);color:var(--ink)}
+.bump{display:flex;gap:4px;justify-content:center;margin-top:7px}
+button.tiny{padding:5px 8px;font-size:11px;letter-spacing:0;min-width:34px;background:var(--card);color:var(--muted);border-color:var(--rule-2)}
+button.tiny:hover{background:var(--bic);color:#fff;border-color:var(--bic)}
+.unit.is-done .unit-t{opacity:.55}
+.unit.is-done .unit-n{color:var(--vert);font-weight:700}
+@media(hover:none){
+  button,.chip,.tab{min-height:44px}
+  button.tiny{min-height:38px;min-width:44px;font-size:13px}
+  .opt{padding:13px 14px}
+  .unit-h{padding:14px 13px}
+  .tcell input{font-size:19px;padding:6px 0}
+  .res{padding:10px 0}
+  .res a{padding:2px 0;display:inline-block}
+}
+@media(min-width:761px) and (max-width:1100px){
+  .grid2{grid-template-columns:1fr;gap:22px}
+  .timer-grid{grid-template-columns:repeat(5,1fr)}
+  .mgrid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:760px){
+  .grid2{grid-template-columns:1fr;gap:20px}
+  .timer-grid{grid-template-columns:repeat(3,1fr)}
+  .pane{padding:16px}
+  .head{padding:18px 16px 16px 32px}
+  .now{text-align:left}
+  .head-row{gap:10px}
+}
+@media(prefers-reduced-motion:reduce){#app *{transition:none!important}}
+
+
+.tbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:12px 16px;margin-top:14px;border:1px solid var(--rule-2);background:var(--card)}
+.tbar-s{font-size:12px;color:var(--muted)}
+.tbar-s.warn{color:var(--rouge)}
+.tbar-b{display:flex;gap:8px;align-items:center}
+.tbar-b input[type=email]{font-family:var(--sans);font-size:13px;padding:8px 10px;border:1px solid var(--rule-2);background:var(--card);color:var(--ink);min-width:180px}
+#syncbar code{font-family:var(--mono);font-size:11px;background:#EFEFE9;padding:1px 4px}
+.tbar button{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  padding:9px 13px;border:1px solid var(--rule-2);background:var(--card);color:var(--ink);cursor:pointer}
+.tbar button:hover{background:var(--bic);color:#fff;border-color:var(--bic)}
+@media(hover:none){.tbar button{min-height:44px}}
+body{margin:0;padding:16px;background:#EFEFE9}
+.wrap{max-width:1100px;margin:0 auto}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div id="app"><div class="boot">Ouverture du cahier…</div></div>
+
+<div class="tbar">
+  <span class="tbar-s" id="tb-status">…</span>
+  <span class="tbar-b">
+    <button type="button" id="tb-exp">Export backup</button>
+    <button type="button" id="tb-imp-btn">Import backup</button>
+    <input type="file" id="tb-imp" accept="application/json,.json" style="display:none">
+  </span>
+</div>
+<div class="tbar" id="syncbar"></div>
+<script>
+(function(){
+  var K="french_lab_v1", BK="french_lab_lastbackup";
+  var st=document.getElementById("tb-status");
+
+  function read(){ try{ return localStorage.getItem(K); }catch(e){ return null; } }
+
+  function summarise(){
+    var raw=read();
+    if(window.__mode==="memory"){
+      st.className="tbar-s warn";
+      st.textContent="Not saving — this page was opened as a local file. Export before you close the tab.";
+      return;
+    }
+    if(window.__mode==="claude"){
+      st.className="tbar-s";
+      st.textContent="Saving to your Claude account.";
+      return;
+    }
+    st.className="tbar-s";
+    if(!raw){ st.textContent="Ready. This device will remember your progress."; return; }
+    var d;
+    try{ d=JSON.parse(raw); }catch(e){ st.textContent="Saving on this device."; return; }
+    var mins=0, days=0;
+    Object.keys(d.log||{}).forEach(function(k){
+      var e=d.log[k], m=(e.l||0)+(e.r||0)+(e.g||0)+(e.s||0)+(e.w||0);
+      if(m>0){ days++; mins+=m; }
+    });
+    var cards=Object.keys(d.voc||{}).length;
+    var known=Object.keys(d.known||{}).filter(function(w){return d.known[w];}).length;
+    var bits=[];
+    if(mins) bits.push((mins/60).toFixed(1)+" h over "+days+" day"+(days===1?"":"s"));
+    if(cards) bits.push(cards+" card"+(cards===1?"":"s")+" started");
+    if(known) bits.push(known+" words marked known");
+    var last=null; try{ last=localStorage.getItem(BK); }catch(e){}
+    var tail = last
+      ? " · last backup "+new Date(last).toLocaleDateString(undefined,{day:"2-digit",month:"short"})
+      : (bits.length ? " · no backup yet" : "");
+    st.textContent = "Saved on this device" + (bits.length ? " · "+bits.join(" · ") : "") + tail;
+  }
+
+  summarise();
+
+  document.getElementById("tb-exp").onclick=function(){
+    var raw=read();
+    if(!raw){ alert("Nothing saved yet — log a day or review a card first."); return; }
+    var blob=new Blob([raw],{type:"application/json"});
+    var a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="french-lab-backup-"+new Date().toISOString().slice(0,10)+".json";
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },500);
+    try{ localStorage.setItem(BK, new Date().toISOString()); }catch(e){}
+    summarise();
+  };
+  document.getElementById("tb-imp-btn").onclick=function(){ document.getElementById("tb-imp").click(); };
+  document.getElementById("tb-imp").onchange=function(ev){
+    var f=ev.target.files&&ev.target.files[0]; if(!f) return;
+    var r=new FileReader();
+    r.onload=function(){
+      try{
+        var incoming=JSON.parse(r.result);
+        var cur=read();
+        if(cur && !confirm("This will replace the progress already saved on this device. Continue?")) return;
+        localStorage.setItem(K, JSON.stringify(incoming));
+        location.reload();
+      }catch(e){ alert("That file could not be read as a backup."); }
+    };
+    r.readAsText(f);
+  };
+})();
+</script>
+
+</div>
+<script>
+(function(){
+const KEY="french_lab_v1";
+const START="2026-07-28";
+const DAILY=120;
+
+/* ---------------- resource library ---------------- */
+const R={
+ lt:{t:"Language Transfer — Introduction to French",u:"https://www.languagetransfer.org/french",k:"Audio course",d:"Free, 40 short lessons. Builds the logic of French rather than vocabulary lists. The single best cold start."},
+ tv5:{t:"TV5MONDE — Apprendre le français",u:"https://apprendre.tv5monde.com/en",k:"Video + exercises",d:"Free, 4000+ exercises graded A1–B2, built by Alliance Française teachers."},
+ rfi:{t:"Le français facile avec RFI",u:"https://francaisfacile.rfi.fr/fr/",k:"News audio",d:"Journal en français facile with synced transcript and speed control. Free."},
+ fle:{t:"Le Point du FLE",u:"https://www.lepointdufle.net/p/learnfrench.htm",k:"Directory",d:"8,600+ links to free exercises, sorted by grammar point. Your index when a topic is weak."},
+ law:{t:"Lawless French",u:"https://www.lawlessfrench.com/",k:"Grammar reference",d:"Clear English explanations of every French grammar point, with quizzes."},
+ kwi:{t:"Kwiziq French",u:"https://french.kwiziq.com/",k:"Adaptive drills",d:"Tests you, finds gaps, builds a study plan. Free tier gives 10 quizzes a month."},
+ ff:{t:"Français Facile",u:"https://www.francaisfacile.com/",k:"Exercise bank",d:"Thousands of free fill-in-the-blank drills with instant correction."},
+ con:{t:"Le Conjugueur",u:"https://leconjugueur.lefigaro.fr/",k:"Conjugation",d:"Type any verb, get every tense. Bookmark it."},
+ forvo:{t:"Forvo — French pronunciation",u:"https://forvo.com/languages/fr/",k:"Pronunciation",d:"Native recordings of individual words. Use when a word won't stick."},
+ anki:{t:"Anki",u:"https://apps.ankiweb.net/",k:"Flashcards",d:"Spaced repetition. Free on desktop. Make your own cards from sentences you meet."},
+ alexa:{t:"Learn French with Alexa",u:"https://learnfrenchwithalexa.com/",k:"YouTube lessons",d:"Structured beginner lessons explained in English. Best first video teacher."},
+ pierre:{t:"Français avec Pierre",u:"https://www.francaisavecpierre.com/",k:"YouTube lessons",d:"Deep free catalogue, all levels, taught in French with subtitles."},
+ easy:{t:"Easy French",u:"https://www.youtube.com/@EasyFrench",k:"Street interviews",d:"Real people, real speed, dual French/English subtitles."},
+ elisa:{t:"French mornings with Elisa",u:"https://www.youtube.com/c/FrenchmorningswithElisa",k:"YouTube",d:"Pronunciation and natural spoken French."},
+ comme:{t:"Comme une Française",u:"https://www.commeunefrancaise.com/",k:"YouTube",d:"How French is actually spoken vs. how textbooks teach it."},
+ inner:{t:"InnerFrench",u:"https://innerfrench.com/",k:"Podcast",d:"The classic intermediate bridge. Slow clear French, no English, full transcripts."},
+ auth:{t:"Français Authentique",u:"https://www.francaisauthentique.com/",k:"Podcast",d:"Relaxed spoken French with free transcripts."},
+ piece:{t:"Piece of French",u:"https://www.youtube.com/c/PieceofFrench",k:"Vlogs",d:"Everyday life in France at natural pace. Good habit-forming background."},
+ coffee:{t:"Coffee Break French",u:"https://coffeebreaklanguages.com/coffeebreakfrench/",k:"Podcast",d:"Seasoned beginner-to-intermediate audio course, free podcast feed."},
+ voisins:{t:"RFI — Les voisins du 12 bis",u:"https://francaisfacile.rfi.fr/fr/podcasts/les-voisins-du-12-bis/",k:"Audio fiction",d:"Bilingual radio drama written for A1–A2 learners. Story, not drills."},
+ talisman:{t:"RFI — Le talisman brisé",u:"https://francaisfacile.rfi.fr/fr/podcasts/le-talisman-bris%C3%A9/",k:"Audio fiction",d:"A1 mystery series. Addictive and level-appropriate."},
+ hugo:{t:"HugoDécrypte",u:"https://www.youtube.com/@HugoDecrypte",k:"News",d:"Daily French news in 10 minutes. B1+ listening at native speed."},
+ arte:{t:"ARTE en français",u:"https://www.arte.tv/fr/",k:"Documentaries",d:"Free European culture channel with French subtitles. B2 material."},
+ tandem:{t:"Tandem — language exchange",u:"https://tandem.net/",k:"Speaking partner",d:"Free text/voice exchange with native speakers. Your output valve."},
+ italki:{t:"italki",u:"https://www.italki.com/",k:"Tutors",d:"Paid 1-to-1 tutors from about $8–15/hour. Community tutors are cheaper than professional ones."},
+ delf:{t:"DELF sample papers — France Éducation international",u:"https://www.france-education-international.fr/delf-dalf",k:"Exams",d:"Official past papers for A1–B2. The honest measure of your level."},
+ lingq:{t:"LingQ",u:"https://www.lingq.com/",k:"Reading",d:"Reading with instant word lookup and tracked known-word count."},
+ lyrics:{t:"LyricsTraining",u:"https://lyricstraining.com/fr",k:"Music drills",d:"Fill the missing lyrics as the song plays. Levels adjustable."},
+ freqdict:{t:"A Frequency Dictionary of French (Lonsdale & Le Bras)",u:"https://www.routledge.com/9780415775311",k:"Book",d:"The 5,000 most frequent lemmas with English equivalents, an example sentence for each, register notes and thematic lists. Routledge, ~£40. The standard reference — buy it rather than hunting for a PDF."},
+ wikfreq:{t:"Wiktionary — French frequency lists",u:"https://en.wiktionary.org/wiki/Wiktionary:Frequency_lists/French",k:"Word lists",d:"Free ranked lists to 20,000 words, plus the Leeds and Kelly project lists."}
+};
+
+/* ---------------- curriculum ---------------- */
+const UNITS=[
+ {lv:"A1",fr:"Les sons et l'alphabet",en:"Sounds, alphabet, greetings",res:["lt","alexa","forvo"],task:"Record yourself saying bonjour, merci, je m'appelle… and compare to Forvo."},
+ {lv:"A1",fr:"Être, avoir, et se présenter",en:"To be, to have, introducing yourself",res:["lt","alexa","ff"],task:"Write 4 sentences: name, city, job, one thing you have."},
+ {lv:"A1",fr:"Articles et genre",en:"le / la / un / une, noun gender",res:["law","ff","tv5"],task:"Label 15 objects around your desk out loud with the article."},
+ {lv:"A1",fr:"Les verbes en -ER au présent",en:"Regular -er verbs, present tense",res:["ff","con","alexa"],task:"Describe your morning in 5 sentences using parler, habiter, travailler, aimer."},
+ {lv:"A1",fr:"La négation — ne… pas",en:"Basic negation",res:["law","ff"],task:"Rewrite yesterday's 5 sentences in the negative."},
+ {lv:"A1",fr:"Les questions",en:"est-ce que, inversion, question words",res:["law","tv5","easy"],task:"Write 6 questions you'd ask a new colleague."},
+ {lv:"A1",fr:"Aller, faire, venir + les lieux",en:"Irregular verbs, places, prepositions",res:["con","ff","talisman"],task:"Say where you go on a normal Tuesday, out loud, no notes."},
+ {lv:"A1",fr:"Les nombres, l'heure, la date",en:"Numbers, time, dates",res:["tv5","ff","voisins"],task:"Read your calendar for the week aloud in French."},
+ {lv:"A2",fr:"Le passé composé avec avoir",en:"Past tense, avoir auxiliary",res:["law","ff","kwi"],task:"Write 6 sentences about what you did yesterday."},
+ {lv:"A2",fr:"Le passé composé avec être",en:"Past tense, être verbs + agreement",res:["law","ff","kwi"],task:"Narrate a trip: arrived, went, stayed, came back."},
+ {lv:"A2",fr:"L'imparfait",en:"Imperfect: habits and description",res:["law","tv5","inner"],task:"Describe your childhood home in 5 sentences."},
+ {lv:"A2",fr:"Le futur proche et le futur simple",en:"Both futures",res:["ff","con","law"],task:"Write your plan for next month."},
+ {lv:"A2",fr:"Les articles partitifs",en:"du, de la, des, and 'pas de'",res:["law","ff"],task:"Write your grocery list as full sentences."},
+ {lv:"A2",fr:"Les verbes pronominaux",en:"Reflexive verbs, daily routine",res:["ff","tv5","voisins"],task:"Your full daily routine, spoken, 90 seconds."},
+ {lv:"A2",fr:"Les pronoms COD et COI",en:"Direct and indirect object pronouns",res:["law","kwi","ff"],task:"Rewrite 8 sentences replacing every noun with a pronoun."},
+ {lv:"A2",fr:"Comparer et décrire",en:"Comparatives, superlatives, adjectives",res:["law","ff","easy"],task:"Compare two candidates you've placed, in French."},
+ {lv:"B1",fr:"Imparfait ou passé composé ?",en:"Choosing between past tenses",res:["law","inner","kwi"],task:"Tell a 10-sentence story about something that went wrong."},
+ {lv:"B1",fr:"Les pronoms relatifs",en:"qui, que, dont, où",res:["law","ff","kwi"],task:"Write 8 sentences describing people using relative clauses."},
+ {lv:"B1",fr:"Y et en",en:"The two pronouns nobody masters early",res:["law","ff","kwi"],task:"Answer 10 questions using only y or en."},
+ {lv:"B1",fr:"Le conditionnel et les phrases avec si",en:"Conditional, hypotheticals",res:["law","inner","kwi"],task:"Write what you'd do with a free year."},
+ {lv:"B1",fr:"Le subjonctif présent",en:"Subjunctive: the trigger list",res:["law","kwi","pierre"],task:"Write 10 sentences beginning il faut que / je veux que / bien que."},
+ {lv:"B1",fr:"Raconter et rapporter",en:"Reported speech, connectors",res:["inner","rfi","hugo"],task:"Summarise a Journal en français facile story in your own words."},
+ {lv:"B2",fr:"Le conditionnel passé et le regret",en:"Past conditional, reproach",res:["law","kwi","inner"],task:"Write about a decision you'd make differently."},
+ {lv:"B2",fr:"Argumenter — concession et nuance",en:"Argumentation, concession, register",res:["hugo","arte","delf"],task:"Write a 200-word opinion piece with one counter-argument."},
+ {lv:"B2",fr:"Le passif et les tournures impersonnelles",en:"Passive voice and alternatives",res:["law","arte","kwi"],task:"Rewrite a page of business writing in French."},
+ {lv:"B2",fr:"Registre et idiomes",en:"Formal, neutral, familiar",res:["comme","piece","easy"],task:"Write the same request three ways: to a client, a peer, a friend."}
+];
+
+/* ---------------- media ---------------- */
+const MEDIA=[
+ {lv:"A1",k:"Film",t:"Le Ballon rouge",d:"1956, 34 min, almost no dialogue. A gentle way to start watching in French."},
+ {lv:"A1",k:"Series",t:"Extra French",d:"Sitcom made for learners. Slow, repetitive, mildly ridiculous, genuinely effective."},
+ {lv:"A1",k:"Series",t:"Peppa Pig en français",d:"Not a joke. Present tense, family vocabulary, 5-minute episodes."},
+ {lv:"A1",k:"Audio",t:"Le talisman brisé (RFI)",d:"Mystery series written at A1. Story pulls you through.",u:"https://francaisfacile.rfi.fr/fr/podcasts/le-talisman-bris%C3%A9/"},
+ {lv:"A1",k:"Song",t:"ZAZ — Je veux",d:"Clear diction, simple present tense, repetitive chorus."},
+ {lv:"A1",k:"Song",t:"Louane — Avenir",d:"Slow, enunciated, emotionally easy to follow."},
+ {lv:"A1",k:"Song",t:"Carla Bruni — Quelqu'un m'a dit",d:"Almost spoken. Excellent for shadowing."},
+ {lv:"A2",k:"Film",t:"Ernest et Célestine",d:"Animated, warm, clean dialogue. The best A2 film there is."},
+ {lv:"A2",k:"Film",t:"Kirikou et la Sorcière",d:"Animated, narrated clearly, strong story."},
+ {lv:"A2",k:"Series",t:"Les voisins du 12 bis (RFI)",d:"Audio fiction about a newcomer in Paris.",u:"https://francaisfacile.rfi.fr/fr/podcasts/les-voisins-du-12-bis/"},
+ {lv:"A2",k:"Film",t:"Le Petit Nicolas",d:"Childhood comedy, straightforward vocabulary."},
+ {lv:"A2",k:"Song",t:"Indila — Dernière danse",d:"Slow, dramatic, easy to sing along to badly."},
+ {lv:"A2",k:"Song",t:"Coeur de pirate — Comme des enfants",d:"Québécois accent, gentle pace."},
+ {lv:"A2",k:"Song",t:"Stromae — Papaoutai",d:"Belgian, crisp diction, rewards a lyric read-through."},
+ {lv:"B1",k:"Film",t:"Les Choristes",d:"Clear diction, school setting, emotionally direct."},
+ {lv:"B1",k:"Film",t:"Le Fabuleux Destin d'Amélie Poulain",d:"Heavy narration — which is a gift for listening practice."},
+ {lv:"B1",k:"Film",t:"Intouchables",d:"Fast in places but the humour carries you."},
+ {lv:"B1",k:"Series",t:"Lupin",d:"Netflix, modern Paris, good subtitles in both languages."},
+ {lv:"B1",k:"Podcast",t:"InnerFrench",d:"The standard bridge out of intermediate. Transcripts free.",u:"https://innerfrench.com/"},
+ {lv:"B1",k:"Song",t:"Angèle — Balance ton quoi",d:"Contemporary, ironic, worth reading the lyrics twice."},
+ {lv:"B1",k:"Song",t:"Clara Luciani — La Grenade",d:"Fast but clear, strong vocabulary."},
+ {lv:"B2",k:"Series",t:"Dix pour cent (Call My Agent!)",d:"Fast overlapping speech, professional register. Excellent for work French."},
+ {lv:"B2",k:"Film",t:"La Haine",d:"1995, heavy banlieue slang and verlan. Hard, and a landmark."},
+ {lv:"B2",k:"Film",t:"Au revoir les enfants",d:"Formal period French, clear enunciation."},
+ {lv:"B2",k:"News",t:"HugoDécrypte",d:"Daily news at native speed.",u:"https://www.youtube.com/@HugoDecrypte"},
+ {lv:"B2",k:"Song",t:"Georges Brassens — Les copains d'abord",d:"Literary French, dense wordplay."},
+ {lv:"B2",k:"Song",t:"Orelsan — Basique",d:"Rapid contemporary slang. If you follow this, you're there."}
+];
+
+/* ---------------- vocabulary bank ---------------- */
+/* [level, theme, french, english, example] */
+const VOCAB=[
+["A1","Les essentiels","bonjour / bonsoir","hello / good evening","Bonjour, je m'appelle Irani."],
+["A1","Les essentiels","s'il vous plaît","please (formal)","Un café, s'il vous plaît."],
+["A1","Les essentiels","merci beaucoup","thank you very much","Merci beaucoup pour votre réponse."],
+["A1","Les essentiels","excusez-moi","excuse me","Excusez-moi, je suis en retard."],
+["A1","Les essentiels","je ne comprends pas","I don't understand","Désolée, je ne comprends pas."],
+["A1","Les essentiels","pouvez-vous répéter ?","can you repeat?","Pardon, pouvez-vous répéter plus lentement ?"],
+["A1","Les essentiels","comment ça va ?","how are you?","Salut, comment ça va ?"],
+["A1","Les essentiels","enchantée","pleased to meet you","Enchantée, je suis Irani."],
+["A1","Les essentiels","oui / non / peut-être","yes / no / maybe","Peut-être demain."],
+["A1","Les essentiels","je voudrais","I would like","Je voudrais un thé."],
+["A1","Les essentiels","il y a","there is / there are","Il y a un problème."],
+["A1","Les essentiels","beaucoup / un peu","a lot / a little","Je parle un peu français."],
+["A1","Les essentiels","toujours / jamais","always / never","Je bois toujours du thé le matin."],
+["A1","Les essentiels","maintenant","now","Je pars maintenant."],
+["A1","Les essentiels","aujourd'hui / demain / hier","today / tomorrow / yesterday","Hier, j'ai travaillé tard."],
+["A1","La vie quotidienne","se réveiller","to wake up","Je me réveille à six heures."],
+["A1","La vie quotidienne","le petit-déjeuner","breakfast","Le petit-déjeuner est à sept heures."],
+["A1","La vie quotidienne","l'école (f)","school","J'emmène ma fille à l'école."],
+["A1","La vie quotidienne","la maison","house, home","Je travaille à la maison."],
+["A1","La vie quotidienne","la voiture","car","Je prends la voiture."],
+["A1","La vie quotidienne","fatigué(e)","tired","Je suis fatiguée ce soir."],
+["A1","La vie quotidienne","occupé(e)","busy","Elle est très occupée aujourd'hui."],
+["A1","La vie quotidienne","tôt / tard","early / late","Je me lève tôt."],
+["A1","Le temps","la semaine prochaine","next week","On se voit la semaine prochaine."],
+["A1","Le temps","le mois dernier","last month","Le mois dernier, j'étais à Delhi."],
+["A1","Le temps","tous les jours","every day","Je pratique tous les jours."],
+["A1","Le temps","en ce moment","at the moment","En ce moment, je cherche un candidat."],
+["A2","Le travail","une réunion","a meeting","J'ai une réunion à neuf heures."],
+["A2","Le travail","un entretien","an interview","L'entretien s'est bien passé."],
+["A2","Le travail","une entreprise","a company","C'est une entreprise américaine."],
+["A2","Le travail","un poste","a position, a role","Le poste est à pourvoir en septembre."],
+["A2","Le travail","un collègue / une collègue","a colleague","Ma collègue s'occupe du dossier."],
+["A2","Le travail","un dossier","a file, a case","J'ai envoyé le dossier hier."],
+["A2","Le travail","une échéance","a deadline","L'échéance est vendredi."],
+["A2","Le travail","envoyer un courriel","to send an email","Je vais lui envoyer un courriel."],
+["A2","Le travail","le salaire","salary","Le salaire est négociable."],
+["A2","Le travail","l'équipe (f)","the team","Elle dirige une équipe de dix personnes."],
+["A2","Le travail","embaucher","to hire","Ils veulent embaucher rapidement."],
+["A2","Le travail","démissionner","to resign","Il a démissionné en mai."],
+["A2","Le travail","à temps plein / à temps partiel","full-time / part-time","Le poste est à temps plein."],
+["A2","Le travail","le télétravail","remote work","Deux jours de télétravail par semaine."],
+["A2","Le recrutement","un candidat / une candidate","a candidate","J'ai trois candidates pour ce poste."],
+["A2","Le recrutement","un chercheur de têtes","a headhunter","Je travaille comme chercheuse de têtes."],
+["A2","Le recrutement","un CV","a CV, résumé","Envoyez-moi votre CV."],
+["A2","Le recrutement","une offre d'emploi","a job offer / posting","L'offre d'emploi est en ligne."],
+["A2","Le recrutement","une compétence","a skill","Ses compétences correspondent au poste."],
+["A2","Le recrutement","l'expérience (f)","experience","Elle a dix ans d'expérience."],
+["A2","Le recrutement","un client","a client","Mon client cherche un directeur commercial."],
+["A2","Le recrutement","recruter","to recruit","Nous recrutons pour une société d'IA."],
+["A2","Le recrutement","le préavis","notice period","Il a trois mois de préavis."],
+["A2","Le recrutement","un cadre","an executive, a manager","C'est un poste de cadre supérieur."],
+["A2","Le recrutement","le directeur commercial","sales director","Nous cherchons un directeur commercial."],
+["A2","Le recrutement","embaucher un profil senior","to hire a senior profile","Ils veulent un profil senior."],
+["A2","Les gens","gentil(le)","kind","Elle est très gentille."],
+["A2","Les gens","sérieux / sérieuse","serious, reliable","C'est une candidate sérieuse."],
+["A2","Les gens","travailleur / travailleuse","hard-working","Il est très travailleur."],
+["A2","Les gens","doué(e) pour","gifted at","Elle est douée pour la négociation."],
+["A2","Les gens","avoir l'air","to seem","Il a l'air compétent."],
+["A2","Les gens","faire confiance à","to trust","Je fais confiance à son jugement."],
+["A2","La ville","le quartier","neighbourhood","J'habite dans un quartier calme."],
+["A2","La ville","prendre le métro","to take the metro","Je prends le métro tous les matins."],
+["A2","La ville","à côté de","next to","Le bureau est à côté de la gare."],
+["A2","La ville","tout droit","straight ahead","Continuez tout droit."],
+["A2","La nourriture","avoir faim / soif","to be hungry / thirsty","J'ai faim, on déjeune ?"],
+["A2","La nourriture","commander","to order","J'ai commandé du poisson."],
+["A2","La nourriture","l'addition (f)","the bill","L'addition, s'il vous plaît."],
+["A2","La nourriture","goûter","to taste, to try","Vous voulez goûter ?"],
+["B1","Opinions","à mon avis","in my opinion","À mon avis, c'est une erreur."],
+["B1","Opinions","je trouve que","I find that","Je trouve que le marché change vite."],
+["B1","Opinions","il me semble que","it seems to me that","Il me semble que c'est trop cher."],
+["B1","Opinions","être d'accord avec","to agree with","Je suis d'accord avec vous."],
+["B1","Opinions","au contraire","on the contrary","Au contraire, je pense que ça marche."],
+["B1","Opinions","d'une part… d'autre part","on one hand… on the other","D'une part c'est cher, d'autre part c'est rapide."],
+["B1","Opinions","en revanche","on the other hand","C'est lent ; en revanche, c'est fiable."],
+["B1","Opinions","par conséquent","consequently","Par conséquent, nous avons changé de stratégie."],
+["B1","Opinions","cependant","however","Cependant, il reste un risque."],
+["B1","Opinions","d'ailleurs","besides, in fact","D'ailleurs, je lui ai déjà parlé."],
+["B1","Opinions","autrement dit","in other words","Autrement dit, c'est impossible."],
+["B1","Opinions","ça dépend de","it depends on","Ça dépend du budget."],
+["B1","Opinions","avoir raison / tort","to be right / wrong","Vous avez raison sur ce point."],
+["B1","Opinions","souligner","to emphasise","Je voudrais souligner un point."],
+["B1","Le travail","gérer","to manage, to handle","Elle gère un portefeuille de clients."],
+["B1","Le travail","mettre en place","to set up, to implement","Nous avons mis en place un nouveau processus."],
+["B1","Le travail","faire le point","to take stock, to review","On fait le point vendredi ?"],
+["B1","Le travail","au sein de","within (an organisation)","Au sein de notre équipe, chacun a son rôle."],
+["B1","Le travail","un objectif","a target, an objective","Il a dépassé ses objectifs."],
+["B1","Le travail","le chiffre d'affaires","revenue, turnover","Le chiffre d'affaires a doublé."],
+["B1","Le travail","la croissance","growth","Une entreprise en forte croissance."],
+["B1","Le travail","un enjeu","a stake, a key issue","C'est un enjeu majeur pour eux."],
+["B1","Le travail","une démarche","an approach, a process","Votre démarche m'intéresse."],
+["B1","Le travail","aboutir","to succeed, to come to fruition","Les négociations ont abouti."],
+["B1","Le travail","relancer","to follow up, to chase","Je vais relancer le client demain."],
+["B1","Le travail","valoriser","to highlight the value of","Il faut valoriser son parcours."],
+["B1","Le travail","un parcours","a career path, background","Elle a un parcours impressionnant."],
+["B1","Le travail","se démarquer","to stand out","Ce profil se démarque des autres."],
+["B1","Expressions","ça vaut le coup","it's worth it","Le déplacement vaut le coup."],
+["B1","Expressions","du coup","so, as a result (very common)","Du coup, on a reporté la réunion."],
+["B1","Expressions","tenir au courant","to keep informed","Je vous tiens au courant."],
+["B1","Expressions","avoir hâte de","to look forward to","J'ai hâte de vous rencontrer."],
+["B1","Expressions","être en train de","to be in the middle of","Je suis en train de préparer l'offre."],
+["B1","Expressions","faire de son mieux","to do one's best","J'ai fait de mon mieux."],
+["B1","Expressions","ça marche","that works, sounds good","Ça marche, à mardi."],
+["B1","Expressions","n'importe quoi","nonsense, anything","Il raconte n'importe quoi."],
+["B1","Expressions","au fur et à mesure","gradually, as you go","On apprend au fur et à mesure."],
+["B1","Expressions","malgré tout","despite everything","Malgré tout, elle a accepté."],
+["B2","Nuance","quoi qu'il en soit","be that as it may","Quoi qu'il en soit, il faut décider."],
+["B2","Nuance","dans la mesure où","insofar as","Dans la mesure où le budget le permet."],
+["B2","Nuance","certes… mais","admittedly… but","Certes, c'est cher, mais c'est le bon profil."],
+["B2","Nuance","force est de constater","one has to admit","Force est de constater que le marché ralentit."],
+["B2","Nuance","il n'en reste pas moins que","the fact remains that","Il n'en reste pas moins que le risque existe."],
+["B2","Nuance","sous réserve de","subject to","Sous réserve de votre accord."],
+["B2","Nuance","le cas échéant","if applicable, should the case arise","Le cas échéant, nous reviendrons vers vous."],
+["B2","Nuance","à défaut de","in the absence of","À défaut d'un accord, nous arrêterons."],
+["B2","Nuance","d'autant plus que","all the more so because","C'est urgent, d'autant plus que le poste est vacant."],
+["B2","Nuance","quitte à","even if it means","Quitte à recommencer, autant bien faire."],
+["B2","Les affaires","un partenariat","a partnership","Nous avons signé un partenariat."],
+["B2","Les affaires","les honoraires (m)","fees","Nos honoraires sont fixés à l'avance."],
+["B2","Les affaires","un devis","a quote, an estimate","Je vous envoie un devis."],
+["B2","Les affaires","une facture","an invoice","La facture est réglée."],
+["B2","Les affaires","un contrat de travail","employment contract","Le contrat de travail est prêt."],
+["B2","Les affaires","la rémunération","compensation package","La rémunération comprend un variable."],
+["B2","Les affaires","une clause de non-concurrence","non-compete clause","Il y a une clause de non-concurrence."],
+["B2","Les affaires","fidéliser","to build loyalty, retain","Il faut fidéliser les meilleurs éléments."],
+["B2","Les affaires","le turnover / la rotation du personnel","staff turnover","La rotation du personnel est élevée."],
+["B2","Les affaires","à l'échelle mondiale","on a global scale","Ils recrutent à l'échelle mondiale."],
+["A1","Verbes essentiels","être","to be","Je suis prête."],
+["A1","Verbes essentiels","avoir","to have","J'ai deux réunions."],
+["A1","Verbes essentiels","faire","to do, to make","Qu'est-ce que tu fais ?"],
+["A1","Verbes essentiels","aller","to go","Je vais au bureau."],
+["A1","Verbes essentiels","pouvoir","to be able to","Je ne peux pas venir."],
+["A1","Verbes essentiels","vouloir","to want","Je veux apprendre le français."],
+["A1","Verbes essentiels","devoir","to have to, must","Je dois partir."],
+["A1","Verbes essentiels","savoir","to know (a fact)","Je ne sais pas."],
+["A1","Verbes essentiels","connaître","to know (a person, place)","Je la connais bien."],
+["A1","Verbes essentiels","dire","to say","Qu'est-ce que tu dis ?"],
+["A1","Verbes essentiels","voir","to see","Je vois le problème."],
+["A1","Verbes essentiels","venir","to come","Elle vient demain."],
+["A1","Verbes essentiels","prendre","to take","Je prends le train."],
+["A1","Verbes essentiels","donner","to give","Donne-moi ton numéro."],
+["A1","Verbes essentiels","mettre","to put","Mets ça sur la table."],
+["A1","Verbes essentiels","parler","to speak","Elle parle trois langues."],
+["A1","Verbes essentiels","aimer","to like, to love","J'aime beaucoup ce travail."],
+["A1","Verbes essentiels","penser","to think","Je pense que oui."],
+["A1","Verbes essentiels","croire","to believe","Je crois qu'il a raison."],
+["A1","Verbes essentiels","trouver","to find","J'ai trouvé la solution."],
+["A1","Verbes essentiels","chercher","to look for","Je cherche un candidat."],
+["A1","Verbes essentiels","demander","to ask (for)","Il m'a demandé un service."],
+["A1","Verbes essentiels","répondre","to answer","Elle n'a pas répondu."],
+["A1","Verbes essentiels","attendre","to wait (for)","J'attends sa réponse."],
+["A1","Verbes essentiels","partir","to leave","Je pars à midi."],
+["A1","Verbes essentiels","sortir","to go out","On sort ce soir ?"],
+["A1","Verbes essentiels","entrer","to enter","Entrez, je vous en prie."],
+["A1","Verbes essentiels","rester","to stay","Je reste à la maison."],
+["A1","Verbes essentiels","passer","to pass, to spend (time)","J'ai passé deux heures dessus."],
+["A1","Verbes essentiels","arriver","to arrive, to happen","Qu'est-ce qui est arrivé ?"],
+["A1","Verbes essentiels","regarder","to watch, to look at","Je regarde un film français."],
+["A1","Verbes essentiels","écouter","to listen","Écoute cette chanson."],
+["A1","Verbes essentiels","lire","to read","Je lis le journal."],
+["A1","Verbes essentiels","écrire","to write","Je lui ai écrit hier."],
+["A1","Verbes essentiels","manger","to eat","On mange à huit heures."],
+["A1","Verbes essentiels","boire","to drink","Je bois du thé."],
+["A1","Verbes essentiels","dormir","to sleep","J'ai mal dormi."],
+["A1","Verbes essentiels","travailler","to work","Je travaille beaucoup."],
+["A1","Verbes essentiels","acheter","to buy","J'ai acheté un livre."],
+["A1","Verbes essentiels","payer","to pay","Je paie par carte."],
+["A2","Verbes courants","apprendre","to learn","J'apprends le français."],
+["A2","Verbes courants","comprendre","to understand","Je comprends mieux maintenant."],
+["A2","Verbes courants","expliquer","to explain","Pouvez-vous m'expliquer ?"],
+["A2","Verbes courants","montrer","to show","Montrez-moi le dossier."],
+["A2","Verbes courants","commencer","to begin","La réunion commence à dix heures."],
+["A2","Verbes courants","finir","to finish","J'ai fini le rapport."],
+["A2","Verbes courants","continuer","to continue","Continuons demain."],
+["A2","Verbes courants","arrêter","to stop","Arrête de t'inquiéter."],
+["A2","Verbes courants","essayer","to try","J'essaie de comprendre."],
+["A2","Verbes courants","réussir","to succeed","Elle a réussi l'entretien."],
+["A2","Verbes courants","échouer","to fail","Le projet a échoué."],
+["A2","Verbes courants","changer","to change","J'ai changé d'avis."],
+["A2","Verbes courants","choisir","to choose","Il faut choisir."],
+["A2","Verbes courants","décider","to decide","Nous avons décidé hier."],
+["A2","Verbes courants","oublier","to forget","J'ai oublié son nom."],
+["A2","Verbes courants","se souvenir de","to remember","Je me souviens de lui."],
+["A2","Verbes courants","perdre","to lose","J'ai perdu mes clés."],
+["A2","Verbes courants","gagner","to win, to earn","Elle gagne bien sa vie."],
+["A2","Verbes courants","envoyer","to send","J'envoie le contrat ce soir."],
+["A2","Verbes courants","recevoir","to receive","J'ai reçu votre message."],
+["A2","Verbes courants","apporter","to bring (an object)","Apporte ton ordinateur."],
+["A2","Verbes courants","amener","to bring (a person)","J'amène ma fille."],
+["A2","Verbes courants","laisser","to leave (behind), to let","Laisse-moi réfléchir."],
+["A2","Verbes courants","tenir","to hold","Tiens ça une seconde."],
+["A2","Verbes courants","ouvrir","to open","Ouvrez la fenêtre."],
+["A2","Verbes courants","fermer","to close","Le bureau ferme à six heures."],
+["A2","Verbes courants","appeler","to call","Je t'appelle ce soir."],
+["A2","Verbes courants","rappeler","to call back, to remind","Je vous rappelle demain."],
+["A2","Verbes courants","rencontrer","to meet","J'ai rencontré son associé."],
+["A2","Verbes courants","présenter","to introduce, to present","Je vous présente ma collègue."],
+["A2","Verbes courants","aider","to help","Puis-je vous aider ?"],
+["A2","Verbes courants","utiliser","to use","J'utilise cet outil tous les jours."],
+["A2","Verbes courants","préparer","to prepare","Je prépare la présentation."],
+["A2","Verbes courants","organiser","to organise","Elle organise la réunion."],
+["A2","Verbes courants","vérifier","to check","Je vais vérifier les chiffres."],
+["A2","Verbes courants","ajouter","to add","J'ajoute une ligne."],
+["A2","Verbes courants","enlever","to remove","Enlève cette phrase."],
+["A2","Verbes courants","garder","to keep","Gardez le document."],
+["A2","Verbes courants","rendre","to give back, to make (someone)","Ça me rend nerveuse."],
+["A2","Verbes courants","devenir","to become","Elle est devenue directrice."],
+["A2","Verbes courants","vivre","to live","Je vis à Kolkata."],
+["A2","Verbes courants","mourir","to die","Son père est mort l'an dernier."],
+["A2","Verbes courants","naître","to be born","Je suis née en Inde."],
+["A2","Verbes courants","sentir","to feel, to smell","Je me sens fatiguée."],
+["A2","Verbes courants","marcher","to walk, to work (function)","Ça ne marche pas."],
+["A2","Verbes courants","courir","to run","Je cours le matin."],
+["A2","Verbes courants","conduire","to drive","Elle conduit vite."],
+["A2","Verbes courants","voyager","to travel","Je voyage pour le travail."],
+["A2","Verbes courants","visiter","to visit (a place)","Nous avons visité Paris."],
+["A2","Verbes courants","rendre visite à","to visit (a person)","Je rends visite à ma mère."],
+["A2","Noms courants","le temps","time, weather","Je n'ai pas le temps."],
+["A2","Noms courants","une heure","an hour, a time","Dans une heure."],
+["A2","Noms courants","le monde","the world, people","Tout le monde est là."],
+["A2","Noms courants","la vie","life","C'est la vie professionnelle."],
+["A2","Noms courants","une chose","a thing","J'ai une chose à te dire."],
+["A2","Noms courants","un truc","a thing (informal)","C'est un truc bizarre."],
+["A2","Noms courants","une raison","a reason","Pour quelle raison ?"],
+["A2","Noms courants","un problème","a problem","Il y a un problème."],
+["A2","Noms courants","une solution","a solution","On va trouver une solution."],
+["A2","Noms courants","une idée","an idea","Bonne idée."],
+["A2","Noms courants","un exemple","an example","Par exemple."],
+["A2","Noms courants","une question","a question","J'ai une question."],
+["A2","Noms courants","une réponse","an answer","J'attends une réponse."],
+["A2","Noms courants","un choix","a choice","Tu n'as pas le choix."],
+["A2","Noms courants","une place","a place, a seat, room","Il n'y a pas de place."],
+["A2","Noms courants","un endroit","a place, a spot","C'est un bel endroit."],
+["A2","Noms courants","le début / la fin","the beginning / the end","Du début à la fin."],
+["A2","Noms courants","une partie","a part","Une partie de l'équipe."],
+["A2","Noms courants","un moyen","a means, a way","Il n'y a pas moyen."],
+["A2","Noms courants","une façon","a way, a manner","D'une certaine façon."],
+["A2","Noms courants","un besoin","a need","J'ai besoin de temps."],
+["A2","Noms courants","une envie","a desire, a craving","J'ai envie de café."],
+["A2","Noms courants","la chance","luck","Bonne chance."],
+["A2","Noms courants","un risque","a risk","C'est un risque calculé."],
+["A2","Noms courants","une erreur","a mistake","C'était une erreur."],
+["A2","Noms courants","une preuve","proof, evidence","Il n'y a aucune preuve."],
+["A2","Noms courants","un point","a point","C'est un bon point."],
+["A2","Noms courants","un mot","a word","En un mot."],
+["A2","Noms courants","une phrase","a sentence","Écris une phrase complète."],
+["A2","Noms courants","une langue","a language, a tongue","Je parle deux langues."],
+["A2","Noms courants","une nouvelle","a piece of news","J'ai une bonne nouvelle."],
+["A2","Noms courants","un rendez-vous","an appointment","J'ai un rendez-vous à midi."],
+["A2","Noms courants","un projet","a project, a plan","Le projet avance bien."],
+["A2","Noms courants","un pays","a country","Un pays étranger."],
+["A2","Noms courants","un état","a state, a condition","L'état du marché."],
+["A2","Noms courants","un service","a service, a favour","Rends-moi un service."],
+["A2","Noms courants","un rapport","a report, a relationship","J'ai lu le rapport."],
+["A2","Noms courants","un compte","an account","Vérifie ton compte."],
+["A2","Noms courants","un prix","a price, a prize","Le prix est trop élevé."],
+["A2","Noms courants","l'argent (m)","money","Ce n'est pas une question d'argent."],
+["A2","Adjectifs","bon / bonne","good","C'est une bonne idée."],
+["A2","Adjectifs","mauvais(e)","bad","C'est un mauvais signe."],
+["A2","Adjectifs","grand(e)","big, tall","Une grande entreprise."],
+["A2","Adjectifs","petit(e)","small","Un petit problème."],
+["A2","Adjectifs","nouveau / nouvelle","new","Un nouveau poste."],
+["A2","Adjectifs","vieux / vieille","old","Un vieil ami."],
+["A2","Adjectifs","jeune","young","Une équipe jeune."],
+["A2","Adjectifs","long / longue","long","Une longue journée."],
+["A2","Adjectifs","court(e)","short","Un court entretien."],
+["A2","Adjectifs","facile / difficile","easy / difficult","C'est plus difficile que prévu."],
+["A2","Adjectifs","possible / impossible","possible / impossible","C'est possible."],
+["A2","Adjectifs","important(e)","important","C'est très important."],
+["A2","Adjectifs","nécessaire","necessary","Ce n'est pas nécessaire."],
+["A2","Adjectifs","prêt(e)","ready","Je suis prête."],
+["A2","Adjectifs","libre","free (available)","Es-tu libre jeudi ?"],
+["A2","Adjectifs","gratuit(e)","free (no cost)","C'est gratuit."],
+["A2","Adjectifs","cher / chère","expensive, dear","C'est trop cher."],
+["A2","Adjectifs","fort(e) / faible","strong / weak","Un profil fort."],
+["A2","Adjectifs","content(e)","pleased","Je suis contente du résultat."],
+["A2","Adjectifs","heureux / malheureux","happy / unhappy","Elle a l'air heureuse."],
+["A2","Adjectifs","triste","sad","Il était triste de partir."],
+["A2","Adjectifs","inquiet / inquiète","worried","Je suis un peu inquiète."],
+["A2","Adjectifs","surpris(e)","surprised","J'ai été surprise."],
+["A2","Adjectifs","sûr(e)","sure, safe","Tu es sûre ?"],
+["A2","Adjectifs","vrai / faux","true / false","C'est vrai."],
+["A2","Adjectifs","propre / sale","clean / dirty","Un bureau propre."],
+["A2","Adjectifs","plein(e) / vide","full / empty","La salle est pleine."],
+["A2","Adjectifs","dernier / dernière","last","La dernière fois."],
+["A2","Adjectifs","prochain(e)","next","La prochaine réunion."],
+["A2","Adjectifs","seul(e)","alone, only","Je travaille seule."],
+["A2","Adjectifs","même","same, even","La même chose."],
+["A2","Adjectifs","chaque","each","Chaque semaine."],
+["A2","Adverbes","très","very","C'est très clair."],
+["A2","Adverbes","assez","enough, quite","C'est assez difficile."],
+["A2","Adverbes","trop","too much","C'est trop tard."],
+["A2","Adverbes","plutôt","rather","C'est plutôt bien."],
+["A2","Adverbes","presque","almost","J'ai presque fini."],
+["A2","Adverbes","déjà","already","Tu as déjà mangé ?"],
+["A2","Adverbes","encore","again, still","Encore une question."],
+["A2","Adverbes","souvent","often","Je viens souvent ici."],
+["A2","Adverbes","parfois","sometimes","Parfois c'est compliqué."],
+["A2","Adverbes","rarement","rarely","Il est rarement en retard."],
+["A2","Adverbes","bientôt","soon","À bientôt."],
+["A2","Adverbes","enfin","finally, at last","Enfin une bonne nouvelle."],
+["A2","Adverbes","d'abord","first of all","D'abord, on écoute."],
+["A2","Adverbes","ensuite / puis","then, next","Ensuite, on décide."],
+["A2","Adverbes","surtout","above all, especially","Surtout, ne dis rien."],
+["A2","Adverbes","vraiment","really","C'est vraiment bien."],
+["A2","Adverbes","peut-être","maybe","Peut-être la semaine prochaine."],
+["A2","Adverbes","ailleurs","elsewhere","Cherchons ailleurs."],
+["A2","Adverbes","partout","everywhere","J'ai cherché partout."],
+["A2","Adverbes","quelque part","somewhere","Il est quelque part ici."],
+["A2","Adverbes","tout de suite","right away","J'arrive tout de suite."],
+["A2","Adverbes","en retard / à l'heure","late / on time","Je suis en retard."],
+["A2","Le corps & la santé","la tête","head","J'ai mal à la tête."],
+["A2","Le corps & la santé","la main","hand","Serrer la main."],
+["A2","Le corps & la santé","les yeux (m)","eyes","Elle a les yeux verts."],
+["A2","Le corps & la santé","le dos","back","J'ai mal au dos."],
+["A2","Le corps & la santé","avoir mal à","to have pain in","J'ai mal à la gorge."],
+["A2","Le corps & la santé","se sentir bien / mal","to feel well / unwell","Je me sens mieux."],
+["A2","Le corps & la santé","un médecin","a doctor","Je vais chez le médecin."],
+["A2","Le corps & la santé","fatigant(e)","tiring","Une semaine fatigante."],
+["A2","Le corps & la santé","se reposer","to rest","Repose-toi ce week-end."],
+["A2","La maison","une pièce","a room","Un appartement de trois pièces."],
+["A2","La maison","la cuisine","kitchen, cooking","Je suis dans la cuisine."],
+["A2","La maison","la chambre","bedroom","La chambre de ma fille."],
+["A2","La maison","le bureau","office, desk","Je travaille depuis mon bureau."],
+["A2","La maison","une clé","a key","J'ai perdu mes clés."],
+["A2","La maison","le loyer","rent","Le loyer est cher ici."],
+["A2","La maison","déménager","to move house","Nous déménageons en août."],
+["A2","Transport","un vol","a flight","Mon vol est à six heures."],
+["A2","Transport","un billet","a ticket","J'ai réservé les billets."],
+["A2","Transport","la gare / l'aéroport","station / airport","Je pars à l'aéroport."],
+["A2","Transport","un embouteillage","a traffic jam","Il y a des embouteillages."],
+["A2","Transport","être en retard","to be late","Le train est en retard."],
+["A2","Transport","réserver","to book","J'ai réservé une table."],
+["A2","Transport","annuler","to cancel","J'ai dû annuler."],
+["A2","Transport","reporter","to postpone","On reporte à lundi."],
+["B1","Communication","préciser","to specify, to clarify","Pouvez-vous préciser ?"],
+["B1","Communication","signaler","to point out, to report","Je vous signale un souci."],
+["B1","Communication","prévenir","to warn, to let know","Préviens-moi si ça change."],
+["B1","Communication","confirmer","to confirm","Je confirme le rendez-vous."],
+["B1","Communication","refuser","to refuse","Elle a refusé l'offre."],
+["B1","Communication","accepter","to accept","Il a accepté nos conditions."],
+["B1","Communication","proposer","to suggest, to offer","Je propose une autre date."],
+["B1","Communication","suggérer","to suggest","Je suggère qu'on attende."],
+["B1","Communication","convaincre","to convince","Il m'a convaincue."],
+["B1","Communication","négocier","to negotiate","Nous négocions le salaire."],
+["B1","Communication","reprocher","to reproach, to blame for","Il me reproche mon retard."],
+["B1","Communication","se plaindre de","to complain about","Il se plaint du bruit."],
+["B1","Communication","remercier","to thank","Je vous remercie."],
+["B1","Communication","s'excuser","to apologise","Je m'excuse du retard."],
+["B1","Communication","promettre","to promise","Je te promets de rappeler."],
+["B1","Communication","avouer","to admit","J'avoue que j'ai oublié."],
+["B1","Communication","insister","to insist","Il a insisté pour venir."],
+["B1","Communication","préciser sa pensée","to make oneself clearer","Laissez-moi préciser ma pensée."],
+["B1","Verbes utiles","permettre","to allow","Cela nous permet de gagner du temps."],
+["B1","Verbes utiles","empêcher","to prevent","Rien ne nous empêche d'essayer."],
+["B1","Verbes utiles","éviter","to avoid","J'évite les réunions inutiles."],
+["B1","Verbes utiles","obtenir","to obtain","Nous avons obtenu un accord."],
+["B1","Verbes utiles","atteindre","to reach","Elle a atteint ses objectifs."],
+["B1","Verbes utiles","dépasser","to exceed, to overtake","Le coût dépasse le budget."],
+["B1","Verbes utiles","augmenter / diminuer","to increase / to decrease","Les coûts ont augmenté."],
+["B1","Verbes utiles","améliorer","to improve","Il faut améliorer le processus."],
+["B1","Verbes utiles","développer","to develop","Nous développons ce marché."],
+["B1","Verbes utiles","réduire","to reduce","Réduire les délais."],
+["B1","Verbes utiles","remplacer","to replace","Qui va la remplacer ?"],
+["B1","Verbes utiles","comparer","to compare","Comparons les deux offres."],
+["B1","Verbes utiles","considérer","to consider","Je considère cela comme un risque."],
+["B1","Verbes utiles","estimer","to estimate, to reckon","J'estime que c'est faisable."],
+["B1","Verbes utiles","prévoir","to plan, to foresee","C'était prévu depuis longtemps."],
+["B1","Verbes utiles","dépendre de","to depend on","Cela dépend de vous."],
+["B1","Verbes utiles","s'agir de","to be about","Il s'agit d'un poste stratégique."],
+["B1","Verbes utiles","se rendre compte","to realise","Je me suis rendu compte trop tard."],
+["B1","Verbes utiles","s'attendre à","to expect","Je m'attendais à mieux."],
+["B1","Verbes utiles","se débrouiller","to manage, to cope","Elle se débrouille très bien."],
+["B1","Verbes utiles","faire face à","to face, to deal with","Nous faisons face à un retard."],
+["B1","Verbes utiles","tenir compte de","to take into account","Il faut tenir compte du contexte."],
+["B1","Verbes utiles","mettre au point","to finalise, to fine-tune","On met au point les détails."],
+["B1","Verbes utiles","remettre en question","to call into question","Cela remet tout en question."],
+["B1","Noms abstraits","un délai","a deadline, a lead time","Le délai est trop court."],
+["B1","Noms abstraits","une contrainte","a constraint","Une contrainte de budget."],
+["B1","Noms abstraits","un avantage / un inconvénient","an advantage / a drawback","Chaque option a ses inconvénients."],
+["B1","Noms abstraits","un atout","an asset, a strength","Son réseau est un atout."],
+["B1","Noms abstraits","une faiblesse","a weakness","C'est sa seule faiblesse."],
+["B1","Noms abstraits","un manque de","a lack of","Un manque de clarté."],
+["B1","Noms abstraits","une hausse / une baisse","a rise / a fall","Une hausse des salaires."],
+["B1","Noms abstraits","un niveau","a level","Un bon niveau de français."],
+["B1","Noms abstraits","une étape","a step, a stage","La prochaine étape."],
+["B1","Noms abstraits","un ensemble","a whole, a set","Dans l'ensemble, c'est bon."],
+["B1","Noms abstraits","le contexte","the context","Dans ce contexte-là."],
+["B1","Noms abstraits","le cadre","the framework, the setting","Dans le cadre de ce projet."],
+["B1","Noms abstraits","une tendance","a trend","La tendance s'inverse."],
+["B1","Noms abstraits","un défi","a challenge","C'est un vrai défi."],
+["B1","Noms abstraits","une preuve de bonne foi","a show of good faith","En preuve de bonne foi."],
+["B1","Noms abstraits","un malentendu","a misunderstanding","C'est un malentendu."],
+["B1","Noms abstraits","une réussite / un échec","a success / a failure","Un échec instructif."],
+["B1","Noms abstraits","le rapport qualité-prix","value for money","Le rapport qualité-prix est bon."],
+["B1","Adjectifs nuancés","efficace","effective, efficient","Une méthode efficace."],
+["B1","Adjectifs nuancés","fiable","reliable","Une source fiable."],
+["B1","Adjectifs nuancés","exigeant(e)","demanding","Un client exigeant."],
+["B1","Adjectifs nuancés","souple","flexible","Des horaires souples."],
+["B1","Adjectifs nuancés","rigoureux / rigoureuse","rigorous, thorough","Une analyse rigoureuse."],
+["B1","Adjectifs nuancés","pertinent(e)","relevant","Une remarque pertinente."],
+["B1","Adjectifs nuancés","évident(e)","obvious","Ce n'est pas évident."],
+["B1","Adjectifs nuancés","surprenant(e)","surprising","Un résultat surprenant."],
+["B1","Adjectifs nuancés","décevant(e)","disappointing","Un trimestre décevant."],
+["B1","Adjectifs nuancés","rentable","profitable","Ce n'est pas rentable."],
+["B1","Adjectifs nuancés","adapté(e) à","suited to","Un profil adapté au poste."],
+["B1","Adjectifs nuancés","concerné(e)","concerned, affected","Les personnes concernées."],
+["B1","Adjectifs nuancés","disponible","available","Je suis disponible jeudi."],
+["B1","Adjectifs nuancés","complet / complète","full, complete","Le dossier est complet."],
+["B1","Adjectifs nuancés","récent(e) / actuel(le)","recent / current","La situation actuelle."],
+["B1","Adjectifs nuancés","ancien(ne)","former, old","Un ancien collègue."],
+["B2","Registre soutenu","effectuer","to carry out (formal)","Nous avons effectué une analyse."],
+["B2","Registre soutenu","mener","to lead, to conduct","Mener une négociation."],
+["B2","Registre soutenu","constater","to note, to observe","Nous constatons une amélioration."],
+["B2","Registre soutenu","envisager","to consider, to contemplate","Nous envisageons une autre approche."],
+["B2","Registre soutenu","susciter","to arouse, to generate","Cela suscite beaucoup d'intérêt."],
+["B2","Registre soutenu","témoigner de","to attest to","Cela témoigne de son sérieux."],
+["B2","Registre soutenu","s'avérer","to turn out to be","Cela s'est avéré compliqué."],
+["B2","Registre soutenu","découler de","to stem from","Ce retard découle d'un malentendu."],
+["B2","Registre soutenu","pallier","to make up for","Pallier un manque d'expérience."],
+["B2","Registre soutenu","entamer","to begin (formal)","Entamer des négociations."],
+["B2","Registre soutenu","aboutir à","to result in","Cela a abouti à un accord."],
+["B2","Registre soutenu","veiller à","to ensure, to see to it","Veillez à respecter les délais."],
+["B2","Registre soutenu","s'abstenir de","to refrain from","Je m'abstiens de commenter."],
+["B2","Registre soutenu","au préalable","beforehand","Il faut le valider au préalable."],
+["B2","Registre soutenu","dans l'immédiat","for the time being","Rien de prévu dans l'immédiat."],
+["B2","Registre soutenu","à terme","in the long run","À terme, cela sera rentable."],
+["B2","Registre soutenu","en amont / en aval","upstream / downstream","Il fallait le prévoir en amont."],
+["B2","Registre soutenu","par ailleurs","moreover, incidentally","Par ailleurs, le budget est fixé."],
+["B2","Registre soutenu","en l'occurrence","in this particular case","En l'occurrence, il avait raison."],
+["B2","Registre soutenu","de surcroît","furthermore","C'est cher et, de surcroît, lent."],
+["B2","Registre soutenu","voire","or even","C'est difficile, voire impossible."],
+["B2","Registre soutenu","néanmoins","nevertheless","Néanmoins, nous avancerons."],
+["B2","Registre soutenu","toutefois","however","Toutefois, un doute subsiste."],
+["B2","Registre soutenu","ainsi que","as well as","Le CV ainsi que la lettre."],
+["B2","Registre soutenu","étant donné que","given that","Étant donné que le poste est urgent."],
+["B2","Registre soutenu","dans le but de","with the aim of","Dans le but de gagner du temps."],
+["B2","Registre soutenu","faute de","for lack of","Faute de temps, nous avons reporté."],
+["B2","Registre familier","bosser","to work (slang)","Je bosse là-dessus."],
+["B2","Registre familier","un boulot","a job (informal)","Il a trouvé un boulot."],
+["B2","Registre familier","galérer","to struggle","Je galère avec le subjonctif."],
+["B2","Registre familier","c'est nul","it's rubbish","Ce film, c'est nul."],
+["B2","Registre familier","ça craint","that's bad / dodgy","Franchement, ça craint."],
+["B2","Registre familier","être crevé(e)","to be exhausted","Je suis crevée."],
+["B2","Registre familier","un truc de fou","something crazy","C'est un truc de fou."],
+["B2","Registre familier","laisse tomber","forget it, drop it","Laisse tomber, c'est trop tard."],
+["B2","Registre familier","ça me saoule","it's driving me mad","Cette réunion me saoule."],
+["B2","Registre familier","tenir le coup","to hold up, to cope","Elle tient le coup."],
+["B2","Registre familier","en avoir marre","to be fed up","J'en ai marre d'attendre."],
+["B2","Registre familier","au pif","at random, roughly","J'ai répondu au pif."]
+];
+const FREQ=[["les",2],["est",0],["des",2],["que",0],["pas",0],["une",2],["pour",2],["dans",2],["qui",2],["sur",2],["par",2],["plus",2],["avec",2],["mais",2],["vous",0],["elle",0],["son",2],["sont",2],["tout",2],["fait",2],["nous",0],["comme",2],["être",2],["bien",0],["ils",2],["cette",2],["faire",0],["aux",2],["même",2],["ont",2],["était",0],["été",2],["mon",0],["ses",2],["lui",0],["aussi",2],["peut",2],["deux",2],["leur",2],["moi",0],["ces",2],["quand",0],["après",2],["suis",0],["très",0],["tous",2],["sans",2],["avoir",0],["non",0],["encore",2],["alors",0],["avait",2],["entre",2],["temps",0],["ans",2],["autres",2],["dit",0],["peu",0],["autre",0],["france",2],["rien",0],["dire",0],["monde",0],["fois",0],["faut",0],["toujours",0],["voir",0],["bon",0],["contre",2],["votre",0],["avant",0],["depuis",2],["donc",0],["notre",0],["sous",2],["jamais",0],["vie",0],["moins",2],["dont",2],["toi",0],["déjà",0],["quoi",0],["soit",2],["trop",0],["leurs",2],["ton",0],["toute",2],["chez",0],["gens",0],["juste",0],["oui",0],["vraiment",0],["ainsi",2],["grand",2],["pays",2],["français",2],["mes",0],["beaucoup",0],["jour",0],["quelques",2],["comment",0],["premier",2],["sera",0],["nos",0],["parce",0],["personne",0],["cela",0],["trois",0],["homme",0],["ici",0],["paris",2],["toutes",0],["cas",2],["chose",0],["doit",0],["partie",2],["car",2],["mal",0],["première",2],["bonne",0],["fin",2],["mieux",0],["pendant",0],["petit",0],["puis",2],["année",2],["cet",0],["ceux",2],["elles",0],["moment",0],["place",2],["plusieurs",2],["pourquoi",0],["ville",2],["jours",0],["mois",2],["vers",2],["histoire",2],["mort",0],["sais",1],["années",2],["fais",0],["nouveau",0],["nouvelle",2],["part",0],["travail",0],["compte",2],["merci",0],["prendre",0],["veut",0],["état",2],["aller",0],["cours",2],["peux",0],["politique",2],["reste",0],["veux",1],["vos",0],["celui",2],["chaque",0],["grande",2],["personnes",2],["femme",0],["nom",0],["prix",2],["également",2],["point",2],["seul",0],["vais",0],["eux",0],["lieu",2],["lors",2],["vrai",0],["droit",2],["selon",2],["coup",0],["mettre",0],["serait",0],["pense",0],["quelque",0],["tant",0],["avais",0],["groupe",2],["maintenant",0],["maison",0],["saint",2],["tête",0],["étaient",0],["aime",0],["aurait",0],["avons",0],["enfants",0],["famille",0],["parler",0],["suite",0],["assez",0],["besoin",0],["demande",0],["genre",0],["savoir",0],["société",2],["trouve",0],["celle",2],["côté",0],["passe",0],["pouvoir",0],["question",0],["raison",0],["sens",0],["ailleurs",2],["avez",1],["certains",2],["devant",0],["dis",0],["jeu",2],["soir",0],["souvent",2],["effet",2],["général",2],["jean",2],["partir",0],["surtout",2],["équipe",0],["choses",0],["dernier",0],["enfin",0],["font",0],["nombre",2],["parle",0],["porte",0],["seulement",0],["site",2],["eau",0],["ensemble",0],["hommes",0],["petite",0],["femmes",0],["mère",0],["passer",0],["près",0],["quel",0],["tes",0],["vois",0],["aucun",0],["loi",2],["parti",0],["pris",0],["père",0],["rapport",2],["dès",2],["peuvent",2],["trouver",0],["autant",0],["face",2],["fille",0],["fut",2],["gouvernement",2],["gros",0],["guerre",0],["niveau",2],["passé",0],["pourrait",0],["quatre",0],["semaine",0],["service",0],["seule",0],["accord",1],["article",2],["donne",0],["donner",0],["ligne",2],["problème",0],["président",2],["vient",0],["cause",0],["crois",0],["dieu",0],["début",2],["exemple",2],["fils",0],["jeune",0],["mis",0],["système",2],["air",0],["aucune",0],["bas",0],["centre",2],["façon",0],["heure",0],["heures",0],["loin",0],["possible",0],["projet",2],["conseil",2],["dernière",0],["idée",0],["notamment",2],["nuit",0],["vont",0],["étais",1],["argent",0],["tour",0],["vue",0],["êtes",1],["aura",0],["dessus",0],["film",0],["meilleur",0],["corps",0],["ensuite",0],["forme",2],["haut",0],["plutôt",0],["arrive",0],["avaient",2],["chef",0],["europe",2],["fort",0],["public",2],["tard",0],["ayant",2],["main",0],["terre",0],["titre",2],["matin",0],["mise",2],["plan",0],["saison",2],["sait",0],["type",0],["afin",2],["aide",0],["belle",0],["choix",0],["française",2],["long",2],["minutes",0],["retour",0],["situation",2],["sommes",0],["vite",0],["yeux",0],["amour",0],["base",2],["journée",0],["nord",2],["devrait",0],["donné",0],["etc",2],["grâce",0],["moyen",0],["ordre",0],["prend",0],["école",0],["étant",2],["but",2],["cinq",0],["manière",2],["mars",2],["pierre",2],["québec",2],["semble",0],["sujet",0],["truc",0],["agit",0],["enfant",0],["ministre",2],["nouvelles",0],["parfois",0],["quelle",0],["rue",0],["sud",2],["super",0],["sûr",1],["unis",2],["vidéo",2],["amis",0],["art",2],["beau",0],["compris",0],["gauche",2],["livre",0],["musique",0],["région",2],["entreprise",2],["jeunes",2],["longtemps",0],["match",2],["permet",2],["simple",0],["voilà",1],["voit",0],["chambre",0],["deuxième",2],["importe",0],["juin",2],["lorsque",2],["mai",2],["peur",0],["plein",0],["police",0],["septembre",2],["sécurité",0],["série",2],["ancien",2],["anglais",2],["certaines",2],["grands",2],["important",0],["jouer",0],["membres",2],["parmi",2],["peine",0],["presque",0],["services",2],["tellement",0],["époque",2],["allez",1],["doute",0],["force",0],["lire",0],["marché",0],["mot",0],["points",2],["recherche",0],["santé",2],["seront",0],["train",0],["voix",0],["écrit",0],["affaires",0],["autour",0],["avis",0],["cependant",2],["développement",2],["faites",0],["hier",0],["juillet",2],["millions",0],["nationale",2],["nombreux",2],["parents",0],["propre",0],["rendre",0],["vivre",0],["droite",2],["environ",2],["fond",0],["mec",0],["mesure",2],["pourtant",0],["trouvé",0],["abord",0],["affaire",0],["envie",0],["gars",1],["laquelle",0],["nouveaux",2],["octobre",2],["pouvez",0],["siècle",2],["sortir",0],["terme",2],["viens",1],["voiture",0],["ait",0],["avril",2],["droits",2],["françois",2],["frère",0],["janvier",2],["jeux",2],["population",2],["questions",0],["roi",0],["venir",0],["action",2],["club",0],["culture",2],["cœur",0],["difficile",0],["existe",2],["laisse",0],["malgré",2],["milieu",0],["produit",2],["programme",2],["propos",0],["route",0],["états",2],["derrière",0],["direction",2],["doivent",0],["emploi",2],["feu",0],["marche",0],["mots",0],["mêmes",2],["période",2],["tel",0],["âge",0],["armée",0],["bois",0],["chance",0],["confiance",0],["croire",0],["date",2],["dix",0],["décembre",2],["laisser",0],["manque",0],["mode",2],["novembre",2],["petits",0],["plaisir",0],["produits",2],["rencontre",2],["résultats",2],["six",0],["vas",1],["août",2],["aurais",1],["blanc",0],["canada",2],["classe",0],["commence",0],["comprendre",0],["demain",0],["demander",0],["formation",2],["liste",0],["photo",0],["rôle",2],["attention",0],["bout",0],["conditions",2],["esprit",0],["espère",0],["garde",0],["internet",2],["intérieur",0],["intérêt",0],["mouvement",2],["noir",0],["origine",2],["présente",0],["regarde",1],["rouge",0],["sortie",0],["auteur",2],["bonjour",1],["février",2],["justice",0],["langue",2],["meilleure",0],["met",0],["occasion",2],["offre",0],["perdu",0],["politiques",2],["qualité",2],["risque",0],["scène",0],["sinon",0],["travaux",2],["voici",0],["appelle",1],["cadre",2],["changer",0],["entreprises",2],["grandes",2],["libre",0],["premiers",2],["production",2],["semaines",0],["vieux",0],["connais",1],["facile",0],["image",2],["lien",2],["mer",0],["photos",0],["pire",0],["rester",0],["sauf",0],["source",2],["troisième",2],["aider",1],["ami",1],["campagne",2],["coupe",2],["cour",0],["durant",2],["faisait",0],["objet",2],["partout",0],["plupart",0],["problèmes",0],["seconde",0],["valeur",2],["étude",2],["études",2],["chacun",0],["cher",0],["devient",0],["données",2],["etat",2],["hors",0],["joue",0],["lequel",0],["montre",0],["national",2],["particulier",2],["penser",0],["poste",0],["présent",0],["publique",2],["réponse",0],["réseau",2],["salle",0],["texte",2],["veulent",0],["appel",0],["celles",2],["certain",0],["contrôle",0],["dois",1],["message",0],["position",0],["république",2],["succès",2],["économique",2],["activité",2],["américain",2],["association",2],["carte",0],["chercher",1],["connu",0],["création",2],["devenir",0],["euros",2],["expérience",0],["filles",0],["fonction",2],["impression",0],["louis",2],["nature",0],["simplement",0],["travers",0],["allemagne",2],["annonce",2],["arrêter",0],["bientôt",0],["chemin",0],["demi",2],["différents",2],["directeur",0],["espace",0],["liberté",0],["mariage",0],["organisation",2],["passage",2],["présence",2],["sein",2],["sort",0],["zone",0],["économie",2],["bureau",0],["compagnie",0],["entrée",0],["mains",0],["moyenne",2],["pied",0],["presse",0],["prise",0],["réalité",0],["social",2],["sorte",0],["université",0],["utiliser",0],["œuvre",2],["accès",0],["commission",2],["différentes",2],["dimanche",2],["départ",0],["générale",2],["lit",0],["marie",0],["mauvais",0],["numéro",0],["puisque",0],["regarder",0],["soient",0],["soleil",0],["taux",2],["travailler",0],["voie",0],["acheter",0],["afrique",2],["attendre",0],["bras",0],["charge",0],["finalement",0],["fini",1],["haute",2],["manger",0],["marque",2],["moyens",2],["perdre",0],["pièces",2],["pratique",2],["sociale",2],["victoire",2],["vérité",0],["cherche",0],["communauté",2],["domaine",2],["idées",0],["monsieur",1],["nombreuses",2],["payer",0],["peuple",0],["proche",0],["publié",2],["quant",2],["reçu",0],["répondre",0],["suivre",0],["administration",2],["auprès",2],["code",0],["demandé",0],["entendu",1],["faisant",2],["gagner",0],["honneur",0],["journal",0],["matière",2],["ouest",2],["permis",0],["rapidement",2],["retrouver",0],["résultat",2],["sept",0],["soirée",0],["sol",0],["sport",2],["téléphone",0],["version",2],["and",0],["armes",0],["arriver",0],["arrivée",0],["coeur",0],["construction",2],["devoir",0],["double",0],["information",2],["midi",2],["mission",0],["moitié",0],["page",2],["particulièrement",2],["pièce",0],["pourra",0],["prochaine",0],["prêt",0],["rend",0],["technique",2],["union",2],["voyage",0],["énergie",0],["éviter",0],["arrête",1],["articles",2],["bord",0],["combien",1],["continue",0],["contraire",0],["courant",0],["derniers",0],["devait",0],["entendre",0],["faits",0],["faute",0],["fera",0],["finale",2],["heureux",0],["impossible",0],["joueur",2],["longue",0],["nécessaire",0],["paul",0],["porter",0],["pouvait",0],["samedi",2],["sang",1],["second",2],["style",2],["sérieux",0],["terrain",0],["villes",2],["église",0],["comprends",1],["créer",2],["décision",0],["défense",0],["désormais",2],["frais",0],["hôtel",0],["instant",0],["livres",0],["majorité",2],["modèle",2],["obtenir",0],["outre",2],["paix",0],["puisse",0],["rappelle",0],["solution",0],["tandis",2],["actuellement",2],["assemblée",2],["bande",0],["commencé",0],["commune",2],["comprend",0],["contrat",0],["faux",0],["forces",0],["groupes",2],["international",2],["morts",0],["note",2],["suffit",0],["total",2],["tôt",0],["vol",0],["voulu",0],["éléments",2],["avenir",0],["bons",0],["critique",2],["dehors",0],["dernières",0],["devenu",0],["directement",0],["discours",0],["dur",0],["explique",0],["forte",0],["fête",0],["informations",0],["joueurs",2],["maître",0],["personnel",0],["petites",0],["premières",2],["preuve",0],["prison",0],["propose",2],["vendredi",0],["éducation",2],["adresse",0],["apprendre",0],["attaque",0],["avance",0],["ceci",0],["court",0],["dos",0],["endroit",1],["essayer",0],["exactement",0],["grave",0],["huit",0],["lumière",0],["meilleurs",0],["médias",2],["retrouve",0],["régime",2],["toutefois",2],["activités",2],["arrière",0],["bonnes",0],["commencer",0],["commerce",2],["complètement",0],["faite",0],["films",0],["grosse",0],["habitants",2],["michel",2],["montrer",0],["physique",2],["quartier",0],["rendez",2],["telle",0],["territoire",2],["unique",0],["vente",2],["via",2],["vis",0],["appelé",0],["arrivé",1],["changement",0],["concernant",2],["connaître",0],["européenne",2],["lettre",0],["lieux",2],["lyon",2],["parole",0],["pieds",0],["principe",2],["prochain",0],["projets",2],["radio",0],["relations",0],["règles",0],["table",0],["vaut",0],["édition",2],["élections",2],["analyse",2],["arrêté",0],["assurer",0],["carrière",0],["chine",2],["commun",2],["couleur",0],["disent",0],["durée",2],["erreur",0],["espèce",0],["faible",0],["importante",0],["large",2],["lundi",2],["mauvaise",0],["membre",0],["ministère",2],["montréal",2],["neuf",0],["objectif",2],["pro",2],["probablement",0],["relation",0],["rendu",0],["respect",0],["responsable",0],["secteur",2],["soutien",2],["tomber",0],["utilisé",0],["vacances",0],["actions",2],["allait",0],["américaine",2],["change",0],["con",0],["concours",2],["couple",0],["course",0],["différence",0],["décidé",0],["fonds",2],["fou",1],["gestion",2],["juge",0],["mesures",2],["mètres",0],["normal",0],["ouverture",2],["poids",0],["réussi",0],["sert",0],["sociaux",2],["suivant",0],["suivi",0],["taille",0],["viennent",0],["village",0],["visite",0],["voulait",1],["voulez",1],["absolument",0],["bref",0],["ciel",0],["clair",0],["combat",0],["comité",2],["continuer",0],["dirait",1],["fallait",0],["mémoire",0],["ouvert",0],["protection",0],["revenir",0],["signe",0],["suisse",2],["tenir",0],["tient",0],["trucs",0],["york",0],["album",2],["ancienne",0],["anti",2],["attend",0],["bah",2],["cinéma",0],["crise",0],["david",0],["espagne",2],["expliquer",0],["garder",0],["généralement",2],["historique",2],["industrie",2],["maladie",0],["militaire",0],["mondiale",2],["médecin",0],["permettre",0],["philippe",2],["prends",1],["russie",2],["soi",2],["tiens",1],["valeurs",2],["vote",2],["vouloir",0],["écoute",1],["île",0],["animaux",0],["application",2],["banque",0],["chanson",0],["département",2],["environnement",2],["ferme",0],["final",2],["internationale",2],["macron",2],["maire",0],["opération",0],["parc",0],["parties",2],["pleine",0],["pose",0],["raisons",0],["seigneur",0],["sorti",0],["traitement",0],["visage",0],["véritable",0],["écrire",0],["anciens",2],["avion",0],["calme",0],["chien",0],["cool",0],["enquête",0],["envoyer",0],["facebook",2],["images",0],["italie",2],["ligue",2],["limite",2],["parfait",1],["port",2],["professeur",0],["seuls",0],["transport",2],["vitesse",0],["étranger",0],["américains",0],["charles",0],["cheveux",0],["dollars",0],["dossier",0],["hiver",2],["hôpital",0],["importance",0],["joué",0],["lutte",2],["marine",2],["ouvrir",0],["pression",0],["puissance",0],["religion",2],["stade",2],["théâtre",0],["volonté",0],["vraie",0],["élèves",2],["évolution",2],["adore",0],["belgique",2],["camp",0],["drôle",0],["débat",2],["etats",2],["oublier",0],["pauvre",0],["propres",0],["regard",0],["représente",2],["revient",0],["rêve",0],["science",2],["souhaite",0],["touche",0],["travaille",1],["utilisation",2],["voulais",1],["étudiants",2],["absence",2],["amérique",0],["angleterre",0],["blanche",0],["capable",0],["changé",0],["cité",2],["clients",0],["connaissance",0],["coups",0],["delà",2],["end",2],["habitude",0],["jacques",2],["poser",0],["principal",0],["publics",2],["royaume",2],["russe",0],["référence",2],["sciences",2],["secret",0],["tombe",0],["top",0],["totalement",0],["usage",2],["week",2],["émission",0],["auraient",0],["beaux",0],["chaîne",0],["chinois",0],["classique",2],["comptes",0],["concerne",0],["contact",0],["créé",0],["dame",0],["direct",0],["divers",2],["effets",2],["envers",0],["expression",2],["facilement",0],["fer",0],["fil",0],["froid",0],["frères",0],["futur",0],["gaz",0],["lignes",2],["malade",0],["nouvel",0],["pareil",0],["parlé",1],["privé",0],["procès",0],["rapide",0],["réseaux",2],["réunion",0],["révolution",2],["tableau",0],["tendance",2],["vingt",2],["vit",0],["atteint",2],["boulot",1],["bébé",1],["choisi",0],["communication",2],["côte",0],["familles",0],["fasse",0],["finir",0],["gagné",0],["goût",0],["humain",0],["lettres",0],["lois",0],["londres",0],["madame",1],["oublié",1],["parlement",2],["peau",0],["surface",0],["tels",2],["uniquement",0],["vendre",0],["venu",1],["victime",0],["écoles",2],["élection",2],["épisode",0],["équipes",2],["évidemment",0],["aimerais",1],["allemand",2],["appris",0],["arrêt",0],["avocat",0],["bonheur",0],["budget",2],["caractère",2],["certaine",0],["choisir",0],["compter",0],["connaît",0],["consommation",2],["cru",0],["dedans",0],["découvrir",0],["enseignement",2],["hollande",2],["laissé",1],["lendemain",0],["magnifique",0],["mari",1],["musée",2],["populaire",2],["prince",0],["province",2],["rentrer",1],["ressources",2],["retraite",0],["revenu",0],["sac",0],["secrétaire",0],["siège",0],["sources",2],["supérieur",2],["surprise",0],["vent",0],["acte",0],["bouche",0],["capacité",2],["centrale",2],["chaud",0],["contexte",2],["dessous",0],["disait",0],["extérieur",0],["faudra",0],["gueule",0],["hauteur",2],["naissance",0],["nicolas",2],["opposition",2],["ouvre",0],["pages",2],["processus",2],["recevoir",0],["recherches",0],["rencontrer",0],["rire",0],["réalisé",0],["salut",1],["secondes",0],["servir",0],["sœur",0],["utilise",0],["victimes",0],["vin",0],["actuel",2],["approche",0],["candidat",2],["capitaine",1],["capitale",2],["croit",0],["désolé",1],["européen",2],["faveur",0],["front",0],["marseille",2],["mérite",0],["noms",0],["noël",0],["papier",0],["portes",0],["présenter",0],["prévu",0],["regardez",1],["sites",2],["sociétés",2],["tribunal",0],["télé",0],["accident",0],["courage",0],["dites",1],["entrer",1],["envoyé",0],["etre",0],["festival",2],["jeudi",0],["journaliste",0],["meme",2],["nul",0],["perte",0],["possibilité",2],["riche",0],["régions",2],["sainte",2],["seraient",0],["serais",1],["termes",2],["tuer",1],["unité",0],["établissement",2],["anniversaire",0],["belles",0],["bruxelles",2],["café",1],["chat",0],["chiffres",2],["coin",0],["couleurs",2],["faudrait",0],["identité",0],["intéressant",0],["lance",0],["largement",2],["martin",0],["mets",0],["moindre",0],["parcours",2],["parfaitement",0],["partage",2],["partis",0],["pont",0],["protéger",0],["préfère",0],["remettre",0],["responsabilité",0],["scientifique",0],["somme",0],["sujets",2],["tirer",0],["titres",2],["vidéos",2],["violence",0],["voire",2],["élevé",0],["aimé",0],["appeler",1],["attends",1],["beauté",0],["bleu",0],["buts",2],["champ",0],["conférence",0],["cuisine",0],["côtés",0],["danger",0],["député",2],["foi",0],["football",2],["google",2],["intérêts",2],["lycée",0],["maisons",0],["mercredi",2],["milliards",2],["mourir",1],["objets",0],["opinion",0],["participer",2],["personnage",0],["places",2],["planète",0],["québécois",2],["retard",1],["savent",0],["sexe",0],["situé",2],["tenu",0],["théorie",0],["verre",1],["actuelle",2],["agence",0],["artiste",0],["artistes",2],["assurance",0],["autorité",2],["avions",0],["bus",0],["certainement",0],["citoyens",2],["clairement",0],["collection",2],["conscience",0],["content",0],["croissance",2],["célèbre",0],["davantage",0],["distance",0],["détails",0],["entier",0],["exposition",2],["extrême",2],["figure",0],["imagine",0],["influence",2],["lecture",2],["maman",1],["masse",2],["matchs",2],["moderne",2],["mur",0],["noire",0],["néanmoins",2],["pensée",2],["privée",0],["propriétaire",0],["propriété",0],["quitter",0],["quotidien",2],["risques",0],["soldats",0],["triste",0],["tué",1],["twitter",2],["vert",0],["vide",0],["âme",0],["échange",0],["élu",2],["énorme",0],["événements",2],["actes",2],["atteindre",0],["bizarre",1],["catégorie",2],["communes",2],["conseils",0],["contenu",2],["dommage",0],["découverte",2],["empire",0],["entièrement",0],["espoir",0],["existence",0],["exploitation",2],["fonctions",2],["malheureusement",0],["mardi",0],["offrir",0],["prennent",0],["religieux",2],["rome",0],["réserve",0],["section",0],["sent",0],["signifie",0],["sociales",2],["spectacle",0],["techniques",2],["algérie",2],["allons",1],["appareil",0],["auront",0],["britannique",2],["chargé",0],["château",0],["crédit",0],["disant",0],["don",0],["découvert",0],["empêcher",0],["entretien",0],["furent",2],["gagne",0],["immédiatement",0],["incroyable",0],["jeunesse",2],["liens",2],["machine",0],["militaires",2],["méthode",2],["naturel",0],["opérations",2],["revue",2],["rose",0],["règle",0],["salon",0],["silence",0],["sympa",0],["traité",0],["univers",0],["venez",1],["vice",2],["vision",0],["écran",0],["acteurs",2],["augmentation",2],["auteurs",2],["bretagne",2],["bruit",0],["classement",2],["conseiller",0],["docteur",1],["entend",0],["formes",2],["franchement",0],["génération",2],["héros",0],["mecs",0],["personnages",2],["pourraient",0],["raconte",0],["rappeler",0],["reine",0],["rejoindre",0],["ressemble",0],["roman",0],["régulièrement",2],["star",0],["structure",2],["textes",2],["tiers",2],["voitures",0],["économiques",2],["écouter",0],["étape",0],["ajouter",0],["avantage",0],["bataille",0],["boîte",0],["capital",2],["certes",2],["cheval",0],["client",0],["conséquences",0],["dangereux",0],["danse",0],["documents",0],["défendre",0],["exercice",2],["françaises",2],["institut",2],["intervention",2],["locaux",2],["logique",0],["milliers",0],["monter",0],["ouverte",0],["palais",0],["passant",2],["principalement",2],["proches",0],["reprendre",0],["revoir",1],["robert",0],["réaliser",0],["récemment",0],["savez",1],["sentiment",0],["soin",0],["statistiques",2],["statut",2],["sélection",2],["sûrement",1],["tente",0],["types",0],["vivant",0],["web",2],["zones",2],["étrangers",0],["arts",2],["baisse",0],["besoins",2],["candidats",2],["claude",2],["collège",2],["construire",0],["domicile",2],["efforts",0],["employés",0],["examen",0],["humaine",0],["max",0],["moteur",0],["officiel",2],["ouvrage",2],["partager",0],["participation",2],["patron",1],["permettant",2],["possède",0],["pourrais",1],["principaux",2],["préparer",0],["rentre",1],["revenus",2],["réduction",2],["réel",0],["réforme",2],["souvenir",0],["suit",0],["tenter",0],["test",0],["transports",2],["utile",0],["achat",2],["bordeaux",2],["bâtiment",0],["cerveau",0],["civile",2],["commentaires",2],["concept",2],["disposition",2],["députés",2],["envoie",0],["fortement",2],["humains",0],["indépendance",2],["japon",0],["justement",0],["lancer",0],["matériel",0],["montant",2],["nations",2],["nommé",0],["notes",0],["oublie",1],["paraît",0],["parles",1],["quatrième",2],["quitte",0],["réaction",0],["réduire",2],["répond",0],["sentir",0],["sourire",0],["tourner",0],["van",0],["agir",0],["alcool",0],["amie",1],["arme",1],["autrement",0],["battre",1],["cartes",0],["coût",2],["différent",0],["disponible",2],["fleurs",0],["iii",2],["indique",0],["intention",0],["jardin",0],["lac",0],["marc",2],["minute",1],["mondial",2],["obligé",0],["patrimoine",2],["pensez",1],["phase",2],["publiques",2],["rare",0],["soins",0],["sois",1],["supérieure",2],["séance",0],["séries",2],["thomas",0],["urgence",0],["vécu",0],["you",0],["élève",0],["accepter",0],["agent",1],["agriculture",2],["allé",1],["améliorer",2],["attendant",0],["auto",2],["cancer",0],["championnat",2],["chasse",0],["complet",0],["complexe",2],["concert",0],["constitution",2],["déclaration",0],["développer",2],["essaie",1],["forcément",0],["gérer",0],["heureusement",0],["impact",2],["inscrit",2],["joie",0],["kilomètres",0],["laurent",2],["lesquels",2],["local",2],["michael",0],["métier",0],["nez",0],["obtenu",0],["occupe",1],["pensé",1],["prises",0],["profiter",0],["présenté",2],["revanche",2],["sauver",1],["savais",1],["scolaire",2],["spécial",0],["totale",2],["troupes",0],["trouvent",0],["télévision",0],["vieille",0],["événement",2],["accueil",0],["agents",0],["aimer",0],["aurai",1],["autorités",0],["bernard",2],["biens",0],["bordel",1],["cadeau",1],["cent",0],["chefs",2],["colère",1],["condition",0],["conduit",0],["diverses",2],["dormir",1],["dépend",0],["eaux",2],["espèces",2],["excellent",0],["ferait",1],["foutre",0],["hasard",0],["http",2],["importants",2],["jaune",0],["jolie",1],["jésus",0],["longueur",2],["minimum",2],["moments",0],["morte",1],["musulmans",2],["numérique",2],["nécessaires",2],["permettent",2],["phrase",2],["pointe",0],["porté",0],["principale",0],["professionnel",0],["proposition",0],["publication",2],["secours",0],["sommet",0],["systèmes",2],["électrique",0],["œil",0],["acheté",0],["acteur",0],["ajoute",2],["arabe",2],["assure",0],["augmenter",2],["bar",0],["blague",0],["champion",0],["chute",0],["complète",2],["compétition",0],["crime",1],["croix",0],["description",2],["devraient",0],["difficultés",2],["dure",0],["dépenses",2],["efficace",0],["essayé",1],["européens",2],["fiche",0],["garçon",1],["histoires",0],["interdit",0],["issue",2],["journalistes",2],["juifs",0],["mille",0],["pain",0],["paroles",0],["pensais",1],["perd",0],["plans",0],["pouvons",1],["pratiques",2],["quelles",0],["quels",0],["repas",0],["résistance",2],["soutenir",0],["suivante",0],["terminé",1],["vêtements",0],["échelle",0],["aimes",1],["appartient",0],["aéroport",0],["canal",2],["chier",0],["chiffre",2],["comte",0],["constitue",2],["contrairement",2],["défaut",2],["enfance",0],["estime",2],["gare",0],["glace",0],["hommage",2],["humanité",0],["info",0],["intéresse",0],["logement",2],["maximum",0],["meilleures",0],["nice",2],["piste",0],["plage",0],["policiers",0],["post",2],["pouvoirs",0],["procédure",0],["produire",0],["proximité",2],["précise",2],["prêts",0],["restent",0],["signé",0],["station",0],["stratégie",0],["telles",2],["terres",0],["tourne",0],["volume",2],["voyez",1],["égalité",2],["élus",2],["boire",1],["chômage",2],["claire",0],["clé",0],["comportement",0],["congrès",0],["critiques",2],["demeure",2],["discussion",0],["distribution",2],["division",0],["définition",2],["effort",0],["importantes",0],["langues",2],["mandat",0],["montagne",0],["médecine",0],["net",2],["noirs",0],["nourriture",0],["pape",2],["parlent",0],["phénomène",2],["portant",2],["portée",0],["précédent",2],["prête",1],["refuse",0],["rencontres",2],["reprise",2],["représentant",2],["répondu",0],["sale",1],["tenue",0],["toulouse",2],["œuvres",2],["amoureux",0],["animal",0],["appartement",0],["bateau",1],["bilan",2],["blancs",0],["cabinet",0],["cap",0],["classes",2],["considéré",2],["demandes",0],["devenue",0],["disparu",1],["donnent",0],["douleur",0],["décès",0],["démocratie",2],["emplois",2],["espagnol",0],["faim",1],["formule",2],["lait",0],["lancé",0],["lune",0],["marqué",0],["office",2],["ordres",0],["peinture",0],["printemps",0],["profit",2],["programmes",2],["rencontré",1],["restaurant",0],["retourner",1],["rues",0],["scientifiques",2],["seine",2],["température",0],["véhicule",0],["alain",2],["allemands",0],["andré",2],["apporter",0],["arrivent",0],["balle",1],["barre",0],["bibliothèque",0],["climat",2],["conflit",2],["difficulté",2],["essentiel",2],["euro",2],["exception",2],["extrêmement",0],["for",0],["forêt",0],["frontière",0],["gratuit",0],["génie",0],["henri",2],["honte",0],["invité",0],["islam",2],["locale",2],["menace",0],["mettent",0],["mobile",0],["mouvements",2],["occuper",1],["orange",0],["pauvres",0],["payé",0],["présentation",2],["présidentielle",2],["quantité",2],["race",0],["rares",2],["reconnu",0],["réellement",0],["sarkozy",2],["solutions",2],["thème",2],["tours",0],["usine",0],["vincent",0],["aient",0],["ambiance",2],["anne",0],["annoncé",2],["aventure",0],["blessé",0],["central",0],["contient",0],["daniel",0],["dessin",0],["duc",2],["décide",0],["déclaré",0],["défaite",2],["empêche",0],["erreurs",0],["finances",2],["finit",0],["fous",1],["fédération",2],["huile",0],["inquiète",1],["israël",2],["james",0],["littérature",2],["messages",0],["min",0],["médecins",0],["métro",0],["nation",0],["oeuvre",0],["penses",1],["placé",0],["proposé",0],["rapports",0],["relativement",2],["rivière",0],["robe",0],["réalisation",2],["réponses",0],["salaire",0],["soeur",1],["toucher",0],["traduction",0],["tranquille",1],["trente",2],["vérifier",0],["écriture",0],["épreuve",0],["étoiles",0],["académie",2],["auparavant",0],["basse",2],["black",0],["brésil",2],["chaleur",0],["commande",0],["commentaire",2],["concurrence",2],["conduite",0],["denis",2],["discuter",0],["doigts",0],["détail",0],["essaye",1],["fit",2],["fruits",0],["haine",0],["heureuse",1],["humour",0],["informatique",2],["interne",0],["lesquelles",2],["légende",0],["magasin",0],["monte",1],["montré",0],["organisé",0],["parfaite",0],["pensent",0],["plaît",1],["postes",2],["préféré",0],["rang",0],["recours",2],["reprises",2],["retrouvé",0],["réflexion",2],["sentiments",0],["souvenirs",0],["tradition",0],["travailleurs",2],["veille",0],["verra",0],["vienne",0],["vive",0],["élément",2],["épouse",0],["établissements",2],["aiment",0],["alliance",0],["apparemment",0],["arbre",0],["aspect",2],["attendu",0],["auquel",2],["bac",2],["bel",0],["composé",2],["conception",2],["décisions",0],["engagement",0],["ennemi",0],["fonctionne",0],["fonctionnement",2],["impôt",2],["individus",2],["initiative",2],["inutile",0],["investissement",2],["maintenir",0],["maroc",2],["modèles",2],["naturelle",2],["objectifs",2],["papa",1],["passion",0],["pourront",0],["professionnels",2],["profil",0],["proposer",0],["préparation",2],["record",0],["remplacer",0],["respecter",0],["richard",0],["royal",2],["savait",1],["serai",1],["souviens",1],["sérieusement",0],["travaillé",0],["unités",0],["uns",0],["électricité",0],["apparaît",2],["avoue",0],["belge",2],["blog",2],["canadien",2],["centaines",0],["champs",0],["changements",0],["chapitre",0],["circulation",0],["conduire",0],["considère",0],["conversation",0],["correspond",0],["coucher",1],["crée",0],["devrais",1],["entends",1],["entraîneur",2],["essai",0],["financement",2],["gentil",1],["infos",0],["institutions",2],["japonais",0],["jugement",0],["limites",0],["marcher",1],["monnaie",0],["murs",0],["nantes",2],["neige",0],["nucléaire",0],["peter",1],["pluie",0],["pote",1],["primaire",2],["promis",1],["reconnaissance",0],["riches",0],["rythme",0],["syrie",2],["tue",1],["uni",2],["vélo",0],["échec",0],["amitié",0],["associations",2],["bain",0],["chances",0],["construit",0],["conséquence",2],["dents",0],["devons",1],["dirais",0],["doux",0],["enceinte",0],["fans",0],["laissez",1],["langage",0],["lille",2],["légèrement",2],["mange",1],["original",0],["pen",2],["perso",2],["philosophie",2],["plateau",0],["pouvant",2],["principales",2],["professionnelle",0],["quasi",2],["remise",0],["russes",0],["récupérer",1],["réduit",0],["résidence",2],["salariés",2],["semblent",0],["située",2],["talent",0],["tombé",0],["tourisme",2],["traiter",0],["venait",0],["vendu",0],["venus",0],["vrais",0],["étrangères",2],["apprend",0],["archives",0],["arrêtez",1],["bravo",0],["chansons",0],["commandant",1],["commercial",0],["convention",2],["couche",0],["couverture",0],["dispose",2],["document",2],["domaines",2],["déteste",1],["empereur",0],["fier",0],["george",1],["grosses",0],["impôts",0],["italien",0],["lever",0],["mini",2],["méthodes",2],["option",0],["orient",2],["patrick",0],["plantes",0],["policier",0],["promotion",0],["précis",0],["présents",2],["quitté",1],["remarque",0],["règlement",0],["sacré",0],["scénario",0],["signes",0],["socialiste",2],["soyez",1],["spéciale",0],["surveillance",0],["tas",0],["technologie",0],["tort",1],["tournée",0],["trou",1],["venue",1],["voies",0],["voisins",0],["voter",0],["véhicules",2],["étudiant",0],["affiche",2],["ajouté",2],["allemande",2],["apporte",0],["arabes",2],["arbres",0],["cache",0],["caisse",0],["casse",0],["centres",2],["collectif",2],["compliqué",0],["condamné",0],["consiste",2],["couper",0],["effectivement",0],["essentiellement",2],["eut",2],["excuse",0],["exprimer",0],["fermer",0],["hausse",2],["joli",1],["journaux",0],["judiciaire",2],["libération",0],["mairie",2],["manuel",0],["million",0],["ministres",2],["officielle",2],["one",0],["organisme",2],["passent",0],["passée",0],["personnalité",0],["princesse",0],["progrès",0],["prouver",0],["puissant",0],["quartiers",0],["représentants",2],["responsables",0],["retirer",0],["retourne",1],["reçoit",0],["réfléchir",0],["résumé",2],["suffisamment",0],["tire",1],["vaste",2],["voudrais",1],["youtube",2],["équilibre",0],["accepte",0],["alexandre",2],["attente",0],["cercle",0],["cesse",0],["charges",0],["chiens",0],["connue",0],["courte",0],["dette",0],["doigt",0],["douce",0],["douze",0],["démocratique",2],["exemples",2],["fenêtre",0],["former",2],["fournir",0],["frappe",0],["grève",0],["imaginer",0],["inde",0],["jusque",0],["meurtre",1],["mises",2],["mélange",0],["normalement",0],["ombre",0],["personnelle",0],["pilote",0],["plat",0],["repris",0],["san",0],["servi",0],["surpris",0],["terrible",1],["tres",0],["établir",0],["étage",0],["actualité",2],["agréable",0],["asie",2],["avancer",0],["avantages",2],["bienvenue",1],["bête",1],["catholique",2],["champions",2],["chaussures",0],["chrétiens",2],["cible",0],["city",0],["devra",0],["donnée",0],["décider",0],["décrit",2],["endroits",0],["format",2],["génial",1],["installer",0],["jambes",0],["lieutenant",1],["live",2],["lié",0],["locales",2],["magazine",0],["marchés",2],["nulle",1],["oeil",1],["olivier",2],["partenaire",0],["particuliers",2],["patients",0],["performance",2],["plainte",0],["portable",0],["portrait",0],["prenez",1],["preuves",1],["rouges",0],["routes",0],["réussir",0],["rêves",1],["score",2],["sors",1],["superbe",0],["tiré",1],["tournoi",2],["ventes",2],["viande",0],["vierge",0],["washington",0],["étrange",1],["antoine",0],["attitude",0],["balles",0],["batterie",0],["chacune",0],["christ",0],["collaboration",2],["colonel",1],["commis",0],["composition",2],["contente",1],["convaincre",0],["copine",1],["courses",0],["devez",1],["diffusion",2],["différente",0],["dirigeants",2],["emmanuel",2],["entière",0],["essence",0],["fondation",2],["guide",0],["immobilier",0],["impose",2],["imposer",2],["invite",0],["jeter",1],["joseph",0],["liés",0],["normale",0],["nécessité",2],["officiellement",0],["ouvrages",2],["poisson",0],["populations",2],["posé",0],["propriétaires",2],["reconnaître",0],["représentation",2],["régler",0],["simples",0],["spécialiste",0],["stage",2],["suppose",1],["tom",1],["touché",0],["usa",0],["vivent",0],["évident",0],["acquis",2],["actif",2],["allais",1],["automne",0],["bloc",0],["chocolat",0],["collègues",0],["confirme",0],["extrait",2],["financière",2],["fixe",0],["foule",0],["fédéral",0],["gay",0],["grèce",2],["guillaume",2],["hauts",2],["immense",0],["immeuble",0],["interview",0],["inverse",2],["lol",2],["longues",0],["léger",0],["machines",0],["maladies",2],["ordinateur",0],["outils",0],["pouvais",1],["principes",2],["précisément",0],["prépare",0],["pub",0],["pêche",0],["rarement",0],["recettes",2],["rentrée",0],["souci",0],["soumis",2],["sports",2],["séjour",0],["taxe",2],["transfert",0],["turquie",2],["vigueur",2],["voient",0],["voile",0],["zéro",0],["allant",0],["apple",2],["aurez",1],["banques",0],["billets",0],["calcul",2],["caractéristiques",2],["chevaux",0],["choc",0],["civil",0],["clés",0],["connaissent",0],["disque",0],["décret",2],["désir",0],["déterminer",0],["enlever",0],["entraînement",0],["expériences",0],["fabrication",2],["fermé",0],["garçons",1],["georges",2],["harry",0],["lourd",0],["mener",0],["micro",0],["mont",2],["morale",0],["niveaux",2],["obligation",2],["officier",0],["poche",0],["prenant",2],["prénom",0],["regardé",0],["rock",0],["réelle",0],["solide",0],["tentative",0],["vallée",0],["égard",2],["émissions",2],["accepté",0],["agricole",2],["appliquer",2],["attaquer",0],["autorisation",0],["bases",2],["circuit",2],["courir",0],["débats",2],["déclare",0],["déjeuner",1],["délai",2],["efficacité",2],["employé",0],["ennemis",0],["experts",0],["fan",0],["feuilles",0],["idéal",0],["individu",2],["intelligence",0],["loire",2],["luc",2],["mention",2],["mettant",2],["née",0],["offert",0],["organiser",0],["partenaires",0],["pause",0],["portent",0],["propositions",2],["quart",0],["remis",0],["resté",0],["ridicule",1],["réputation",0],["secondaire",2],["seules",0],["soucis",0],["studio",0],["sucre",0],["sénat",2],["tenté",0],["trafic",0],["utilisateurs",2],["venant",0],["violences",2],["voisin",0],["échanges",2],["électeurs",2],["étudier",0],["affirme",2],["angle",0],["appui",2],["attaques",0],["auras",1],["berlin",0],["big",0],["billet",0],["bière",1],["bâtiments",2],["cacher",1],["chère",1],["clubs",2],["compétences",0],["coupable",1],["culturel",2],["cérémonie",0],["debout",1],["disais",1],["drogue",1],["découvre",0],["détruire",0],["enfer",1],["européennes",2],["frontières",2],["gardien",0],["genève",2],["geste",0],["juger",0],["majeur",2],["meurt",0],["mène",0],["notion",2],["pardon",1],["participé",2],["possibles",0],["poursuivre",0],["pousse",0],["raconter",0],["relève",0],["règne",0],["récit",2],["salles",2],["sommeil",0],["suicide",0],["tome",2],["traces",0],["tâche",0],["ultra",2],["établi",2],["accueillir",0],["alpes",2],["associé",0],["atelier",0],["automobile",2],["charte",2],["christian",0],["cinquième",0],["circonstances",0],["communautés",2],["connaissances",2],["conserver",2],["deviennent",0],["donnant",2],["définitivement",0],["démarche",2],["foot",0],["gouverneur",0],["gratuitement",2],["incendie",0],["interprétation",2],["journées",2],["juges",0],["julien",2],["juridique",2],["leader",0],["love",0],["luxe",0],["man",0],["manifestation",2],["manifestations",2],["marques",0],["moral",0],["multiples",2],["municipal",2],["noter",2],["parlant",0],["particulière",2],["plait",1],["positif",0],["procureur",0],["prof",0],["pré",2],["pétrole",0],["repose",0],["show",0],["simon",0],["siècles",0],["strasbourg",2],["suivantes",2],["traite",0],["utilisés",2],["vague",0],["abus",2],["active",2],["aise",0],["anciennes",2],["appareils",2],["bat",0],["citoyen",0],["commissaire",0],["compagnies",2],["convient",0],["coopération",2],["degré",0],["disponibles",2],["dite",2],["drapeau",0],["détruit",0],["eric",0],["essais",2],["franc",0],["fuite",0],["gamme",2],["institution",2],["invités",0],["lunettes",0],["messieurs",1],["mine",0],["moscou",0],["news",2],["obligatoire",2],["paradis",0],["potentiel",0],["pousser",0],["remarqué",0],["repos",0],["reprend",0],["royale",0],["sec",0],["semblait",0],["sondage",2],["standard",0],["trouvait",0],["trésor",0],["électronique",2],["évidence",0],["alerte",0],["architecture",2],["baiser",1],["bourse",0],["chambres",0],["comparaison",2],["conneries",1],["connus",0],["coûte",0],["crimes",0],["cycle",2],["destination",0],["dossiers",0],["douche",0],["explication",0],["exécution",0],["falloir",0],["fausse",0],["fonctionnaires",2],["formé",2],["fortes",2],["franco",2],["fêtes",0],["henry",1],["inscription",2],["ira",1],["libres",0],["lèvres",0],["madrid",2],["mail",0],["montrent",0],["offres",2],["oiseaux",0],["oreilles",0],["organisations",2],["outil",2],["paiement",2],["parisien",2],["parlait",0],["poissons",0],["profite",0],["profondeur",2],["précédente",2],["publicité",0],["publiée",2],["queue",0],["quinze",0],["refusé",0],["rejoint",0],["religieuse",2],["représentent",2],["régional",2],["résoudre",0],["réussite",0],["sexy",1],["situations",2],["souris",0],["sûre",1],["termine",0],["tests",0],["tir",0],["tonnes",0],["traduit",2],["témoin",1],["témoins",0],["utilisée",0],["échapper",0],["achète",0],["adultes",0],["alimentation",2],["apparition",2],["armées",2],["arrondissement",2],["artistique",2],["ballon",0],["bio",2],["branche",0],["caméra",0],["chercheurs",2],["combats",0],["conclusion",0],["contrats",2],["contrôler",0],["corse",2],["couronne",0],["curieux",0],["dialogue",2],["dispositif",2],["découvrez",2],["engagé",0],["etait",0],["excellente",0],["facteurs",2],["fameux",0],["feront",0],["fillon",2],["financier",2],["grec",2],["habite",0],["historiques",2],["humaines",2],["ingénieur",0],["laboratoire",0],["laissant",0],["lancement",0],["larmes",0],["libéral",2],["liquide",0],["lot",0],["lutter",0],["légère",0],["manqué",0],["matières",2],["mauvaises",0],["montpellier",2],["médicaments",0],["occupé",1],["olympique",2],["patient",1],["paye",0],["pensées",0],["positions",2],["prime",0],["prévenir",0],["puissent",0],["pur",0],["remplir",0],["rupture",0],["secrets",0],["ski",2],["solidarité",2],["sombre",0],["suivants",2],["suivent",0],["supporter",0],["supprimer",2],["temple",0],["territoires",2],["transition",2],["têtes",0],["vies",1],["voyons",1],["îles",2],["amélioration",2],["ange",0],["augmente",0],["australie",0],["bleus",0],["bouger",0],["bouteille",0],["catherine",0],["catégories",2],["considérer",0],["corée",0],["cou",0],["critères",2],["croyez",1],["destiné",2],["directe",2],["disons",0],["dizaines",2],["développé",2],["engager",0],["favorable",2],["feuille",0],["folle",1],["forts",0],["fortune",0],["horreur",0],["indiqué",2],["installé",0],["introduction",2],["jure",1],["liées",2],["logements",2],["magasins",0],["manche",0],["miss",0],["montage",2],["montagnes",0],["montée",0],["morceau",0],["morceaux",0],["navire",0],["océan",0],["perspective",2],["piscine",0],["poursuit",0],["pouvaient",0],["présidence",2],["rappel",2],["rapporte",0],["restera",0],["reviens",1],["résolution",2],["saisons",2],["signature",0],["street",0],["symbole",0],["tension",0],["thèse",2],["troubles",0],["trouvez",0],["utilisant",0],["ventre",0],["virus",0],["voler",1],["écrivain",0],["équivalent",2],["abri",0],["accompagné",2],["accusé",0],["adopté",2],["appels",0],["bureaux",0],["business",0],["cellules",0],["christophe",2],["combattre",0],["commencent",0],["coté",0],["couvert",0],["culte",2],["culturelle",2],["difficiles",0],["digne",0],["disparition",0],["dépôt",0],["faisaient",0],["fidèle",0],["graves",0],["hâte",0],["industriel",2],["installation",2],["internationales",2],["intégration",2],["job",0],["jury",0],["lis",0],["los",0],["lâche",1],["lève",0],["missions",2],["médaille",0],["ménage",0],["odeur",0],["participe",2],["peuples",2],["pitié",1],["plante",0],["portugal",2],["poésie",0],["priorité",0],["probable",0],["ramener",1],["refus",2],["rendent",0],["richesse",2],["révèle",2],["sachant",0],["sensible",0],["souffle",0],["soutient",2],["totalité",2],["trump",2],["vise",0],["with",0],["éditions",2],["actrice",0],["aides",0],["aimez",1],["arc",0],["assuré",0],["attendent",0],["balance",0],["blessés",0],["causes",2],["charlie",1],["classiques",2],["comédie",0],["corruption",0],["croient",0],["crème",0],["degrés",0],["demandent",0],["dispositions",2],["extension",2],["fins",0],["folie",0],["forum",2],["féminin",2],["garantie",0],["honnête",1],["hypothèse",2],["industrielle",2],["indépendant",2],["licence",0],["manquer",0],["mexique",0],["naturellement",0],["normes",2],["oreille",0],["parallèle",2],["profondément",0],["provinces",2],["précision",2],["prêtre",0],["pure",0],["raté",0],["regrette",0],["rennes",2],["roy",0],["réalisée",2],["salaires",2],["sexuelle",0],["sportif",2],["spécialement",0],["spécifique",2],["structures",2],["technologies",2],["toit",0],["voté",0],["yves",2],["écart",0],["actifs",2],["adulte",0],["anglaise",0],["applique",2],["assis",1],["battu",0],["chemins",0],["chronique",2],["connait",0],["cons",0],["contribution",2],["copie",0],["cultures",2],["dessins",0],["destruction",0],["devaient",0],["diplôme",0],["enregistrement",0],["envoi",2],["espaces",2],["espérer",0],["existent",0],["extraordinaire",0],["faibles",0],["financiers",2],["fondé",2],["foyer",0],["frappé",0],["fruit",0],["guy",0],["horrible",1],["humeur",0],["immigration",2],["inconnu",0],["innovation",2],["jouent",0],["littéraire",2],["longs",0],["magique",0],["maintien",2],["malades",0],["marrant",1],["maîtrise",0],["mécanique",2],["pars",1],["participants",2],["paru",2],["permettra",2],["populaires",2],["publier",2],["pute",1],["remarquer",0],["remonter",0],["renseignements",0],["restauration",2],["romain",2],["réalise",0],["sable",0],["sarah",1],["sel",0],["supplémentaires",2],["suprême",0],["syndicat",0],["sérieuse",0],["terminer",0],["toile",0],["tourné",0],["transformation",2],["témoignage",0],["vainqueur",0],["vues",0],["énormément",0],["étoile",0],["évaluation",2],["évêque",2],["abandonné",0],["adaptation",0],["adjoint",0],["agissait",0],["alex",1],["appelée",0],["avenue",0],["axe",2],["boite",0],["calendrier",2],["canadienne",2],["champagne",0],["consacré",2],["convaincu",0],["conçu",0],["cousin",0],["différences",2],["drame",0],["durable",2],["dynamique",2],["déplacement",2],["expert",0],["fallu",0],["fermeture",0],["fondateur",2],["frank",1],["future",0],["galerie",0],["indice",0],["interdiction",2],["iran",2],["major",0],["mines",0],["nécessairement",2],["organismes",2],["organisée",2],["paie",0],["papiers",1],["pascal",2],["physiques",2],["pierres",0],["pis",0],["placer",0],["plaque",0],["pop",0],["privés",2],["profond",0],["qualités",0],["refaire",0],["réactions",2],["réalisateur",0],["rédaction",2],["sauvage",0],["scènes",0],["secteurs",2],["seuil",2],["signer",0],["solo",0],["supplémentaire",2],["team",0],["trace",0],["vins",2],["visible",2],["visiter",0],["voyages",0],["voyant",0],["épisodes",2],["abandonner",0],["accent",0],["animation",2],["annoncer",0],["aspects",2],["attirer",0],["bassin",2],["basé",0],["boutique",0],["canon",0],["carré",2],["carrément",0],["casser",0],["chapeau",0],["chris",0],["col",0],["courrier",0],["créée",2],["côtes",0],["destin",1],["discussions",2],["diversité",2],["dizaine",2],["déchets",0],["dépasse",0],["engage",0],["fout",0],["frédéric",2],["hyper",2],["intermédiaire",2],["intéressé",0],["logiciel",2],["loup",0],["marge",0],["maurice",0],["monaco",2],["médical",0],["métiers",2],["oncle",1],["parlementaire",2],["personnellement",0],["poète",0],["préciser",2],["rends",1],["réfugiés",2],["stop",1],["stress",0],["travaillent",0],["utilisent",0],["villages",2],["visant",2],["voulons",0],["élevée",0],["équipement",0],["accéder",0],["aille",1],["alliés",0],["amoureuse",0],["apprentissage",2],["assistance",0],["atmosphère",0],["attentat",0],["barcelone",2],["bombe",1],["cadeaux",0],["cadres",2],["capables",0],["charme",0],["cite",2],["com",2],["commerciale",2],["comporte",2],["copain",1],["coûts",2],["dimension",0],["dingue",1],["discipline",0],["défi",0],["effectuer",2],["expliqué",0],["facteur",0],["gagnant",0],["gouvernements",2],["hautes",2],["hey",1],["identifier",0],["intelligent",0],["italienne",2],["justifier",0],["kim",0],["leçon",0],["limiter",2],["liée",2],["mac",0],["majeure",2],["maria",0],["marre",1],["mit",0],["mystère",0],["méchant",0],["nationales",2],["opposé",0],["orientation",2],["originale",0],["origines",2],["paquet",0],["passes",0],["paysage",2],["pertes",0],["pistes",0],["pleurer",1],["potes",0],["prisonniers",0],["prouve",0],["provence",2],["présidente",0],["pôle",2],["quasiment",0],["recette",0],["reconnaît",2],["red",0],["remonte",0],["représenter",0],["retrait",2],["roger",0],["réception",0],["soldat",1],["victor",0],["visiteurs",0],["étions",1],["amende",0],["amener",1],["aménagement",2],["américaines",2],["applications",2],["atlantique",2],["atteinte",2],["autonomie",2],["autoroute",0],["campagnes",2],["capacités",0],["chanter",1],["chanteur",0],["chers",0],["chevalier",0],["commandes",0],["communiqué",2],["constater",2],["continent",2],["destinée",0],["diable",1],["dirige",0],["dise",1],["disparaître",0],["départements",2],["faisons",1],["ferais",1],["fleur",0],["francs",0],["free",2],["fusion",0],["gris",0],["juif",0],["lecteur",2],["luxembourg",2],["marins",0],["matériaux",2],["milieux",2],["militants",2],["modernes",2],["motif",0],["métal",0],["météo",0],["naturelles",2],["obligations",2],["obtient",0],["oubliez",1],["ouvriers",0],["passés",0],["pauvreté",2],["possession",0],["pratiquement",0],["provenant",2],["prévue",2],["refuser",0],["remplacement",2],["remporté",2],["retenir",0],["répartition",2],["sache",1],["scandale",0],["sncf",2],["suède",2],["taper",0],["terrains",2],["terrorisme",2],["terroristes",0],["thé",1],["titulaire",2],["tunisie",2],["verts",0],["video",2],["vivement",2],["équipage",0],["étrangère",0],["êtres",0],["absolue",2],["adam",1],["adversaire",0],["aidé",1],["albert",0],["all",0],["apres",0],["associés",0],["audience",0],["autriche",2],["canadiens",2],["censé",1],["citer",2],["composée",2],["comprennent",0],["conflits",2],["conséquent",2],["contenant",2],["correspondant",2],["dates",2],["design",2],["documentaire",2],["enregistré",0],["explosion",0],["fac",0],["faculté",2],["faisais",1],["fiscale",2],["fondée",2],["formations",2],["gorge",0],["guerres",0],["généraux",2],["ignore",1],["indispensable",2],["intéressante",0],["investir",0],["joyeux",1],["magie",1],["modifier",2],["médicale",0],["nationaux",2],["nettement",2],["nuits",0],["open",2],["ordinaire",0],["paire",0],["personnels",0],["pleins",0],["pologne",2],["poursuite",0],["prit",0],["promesse",0],["registre",0],["relative",2],["rempli",0],["serez",1],["servent",0],["sortant",0],["souffrir",0],["soutenu",2],["suivez",0],["suppression",2],["tournage",0],["transformer",0],["trompe",0],["val",2],["voila",0],["voyageurs",2],["écrits",2],["émotions",0],["étapes",2],["accords",2],["alimentaire",0],["annuel",2],["apparence",0],["autrefois",0],["bill",1],["bob",1],["bruno",0],["bénéfice",2],["chaînes",0],["cherché",0],["clinique",0],["communiste",0],["concentration",0],["connaissez",1],["couteau",1],["dieux",0],["doucement",1],["dérange",1],["ferai",1],["file",0],["fleuve",0],["gras",0],["générations",0],["gérard",2],["hockey",0],["inscrire",0],["instruments",0],["internationaux",2],["intervenir",0],["intégrer",0],["intérieure",0],["lecteurs",2],["liaison",0],["limité",2],["mangé",1],["marketing",2],["migrants",2],["miroir",0],["officiers",0],["organise",0],["paraître",0],["partenariat",2],["performances",2],["plateforme",2],["procédé",2],["propriétés",2],["préfecture",2],["préfet",2],["présentent",2],["renforcer",2],["rené",2],["respecte",0],["rhône",2],["référendum",2],["régionale",2],["réservé",0],["sensation",0],["support",2],["syndicats",2],["séparation",0],["vend",0],["verte",0],["victoires",2],["voudrait",1],["écrite",0],["électriques",2],["élevés",2],["émotion",0],["étonnant",0],["acquisition",2],["africains",2],["agricoles",2],["amateurs",2],["apprécier",0],["arrivés",0],["attendais",1],["avocats",0],["bouge",1],["chargée",0],["cherchent",0],["choisis",0],["collective",2],["collègue",0],["constate",2],["couples",0],["couvre",0],["croyais",1],["dominique",2],["dommages",0],["défend",2],["désert",0],["déçu",0],["enjeux",2],["enseigne",0],["esprits",0],["feux",0],["frapper",1],["gardes",1],["gilles",2],["gloire",0],["héritage",0],["implique",0],["industriels",2],["inférieur",2],["instruction",2],["jugé",0],["julie",0],["jus",0],["kevin",0],["latin",0],["limitée",2],["livraison",0],["maillot",0],["mario",0],["mark",1],["marquer",0],["mettez",1],["moto",0],["oiseau",0],["olympiques",2],["onze",0],["parisienne",2],["parlez",1],["plastique",0],["plate",2],["privées",2],["prière",0],["producteurs",2],["profession",0],["profonde",0],["pseudo",2],["recrutement",2],["religieuses",2],["remplacé",0],["réponds",1],["réunis",0],["salope",1],["sauter",1],["signal",1],["sièges",0],["sortent",0],["souffre",0],["tableaux",0],["thierry",2],["toilettes",1],["tony",1],["tués",0],["unies",2],["universités",2],["villa",0],["volant",0],["ère",0],["éditeur",0],["accessible",2],["age",0],["ali",0],["ambassadeur",0],["autorisé",0],["caché",1],["carbone",2],["cellule",0],["chantier",0],["chapelle",0],["chinoise",0],["civils",0],["communications",0],["comparer",0],["connard",1],["conseillers",2],["conservateur",2],["constituent",2],["descendre",1],["devoirs",0],["dira",0],["due",0],["duo",2],["effectué",2],["entraîne",0],["estimé",2],["exclusivement",2],["familiale",0],["fixé",0],["flics",1],["forcé",0],["fédérale",0],["gamin",1],["global",2],["générales",2],["hop",0],["horizon",0],["hésite",0],["inspiré",0],["intitulé",2],["iphone",2],["joe",1],["maritime",2],["mignon",1],["nan",0],["normandie",2],["négociations",0],["parisiens",2],["passait",0],["pensait",1],["prochaines",0],["précieux",0],["quelconque",0],["rayon",0],["saisir",0],["scolaires",2],["semblant",0],["similaire",2],["stars",0],["steve",1],["subir",0],["terroriste",0],["tester",0],["transmission",0],["témoignages",2],["universitaire",2],["vertu",0],["wow",1],["écris",0],["équipements",2],["évoque",2],["accompagne",0],["accompagner",0],["adopter",0],["adoption",0],["apprécie",1],["assister",0],["aveugle",0],["baisser",0],["best",2],["beurre",0],["biais",2],["blessure",0],["boucle",0],["bulletin",2],["candidature",2],["catalogue",2],["chant",0],["coach",0],["consommateurs",2],["del",0],["der",2],["devais",1],["diriger",0],["dîner",1],["essayez",1],["excuses",1],["favoriser",2],["fiction",0],["finance",2],["financer",2],["fine",0],["flotte",0],["forcer",0],["froide",0],["fromage",0],["guère",0],["ile",2],["incapable",0],["installations",2],["inter",2],["investissements",2],["issus",2],["jette",0],["laissent",0],["lion",0],["marin",0],["marié",1],["masque",0],["massif",2],["mentionné",0],["milan",0],["monté",0],["moteurs",0],["musulman",2],["navires",0],["nomination",2],["observer",0],["occupation",2],["opéra",0],["ose",0],["partisans",2],["peintre",0],["personnelles",0],["pot",0],["présentée",2],["racisme",2],["remercie",1],["récente",2],["répète",0],["sage",0],["savons",1],["session",2],["sophie",0],["sortes",0],["souffrance",0],["supporters",2],["tarifs",2],["tempête",0],["tennis",0],["violent",0],["voulaient",0],["épreuves",0],["abbé",2],["acier",0],["adapté",2],["allée",1],["amateur",0],["amené",1],["angeles",0],["appartenant",2],["appellent",0],["apporté",1],["argument",0],["automatique",0],["cardinal",0],["chante",0],["chaude",0],["communiquer",0],["consulter",0],["coupé",0],["définir",2],["enseignants",2],["entré",1],["exemplaires",2],["fantastique",1],["fenêtres",0],["game",2],["géant",0],["indépendante",2],["islamique",2],["libertés",2],["légitime",0],["mensonge",0],["mike",1],["ontario",2],["orléans",2],["out",0],["partagé",0],["perdue",0],["personnalités",2],["positive",0],["producteur",0],["précédemment",0],["prévention",2],["périodes",2],["real",2],["rentré",1],["reportage",0],["restes",1],["rio",0],["seras",1],["solaire",0],["sorties",0],["subi",0],["sénateur",0],["tapis",0],["taxes",2],["traités",2],["trouves",1],["viol",0],["accueille",2],["adapter",0],["affronter",0],["africain",2],["africaine",2],["ailes",0],["alsace",2],["arbitre",0],["arguments",2],["arthur",0],["attendait",0],["bandes",0],["banlieue",0],["blessures",0],["bleue",0],["bonus",0],["bouffe",0],["bénéfices",0],["camion",1],["camps",0],["ceinture",0],["cents",0],["charbon",0],["chats",0],["chrétien",0],["compétence",2],["confirmé",0],["conférences",2],["conseille",0],["considérée",2],["constitué",2],["couvrir",0],["dan",1],["donnez",1],["dons",0],["décédé",0],["déplacer",0],["déposer",0],["développe",2],["entraîner",0],["environs",0],["express",0],["exprime",2],["flux",0],["fréquence",0],["instrument",0],["ivoire",2],["lumières",0],["législatives",2],["légumes",0],["maîtres",0],["mineurs",0],["minuit",0],["motifs",2],["nationalité",2],["nourrir",0],["poussé",0],["prendra",1],["progressivement",2],["préparé",0],["prévoit",2],["relais",0],["relever",0],["rond",0],["ronde",0],["références",2],["seins",0],["situe",2],["stations",2],["succession",2],["thèmes",2],["tiennent",0],["trains",0],["ump",2],["vaisseau",1],["valls",2],["visiblement",0],["volontaire",0],["voyager",0],["william",0],["économies",0],["églises",2],["étudié",0],["accidents",0],["administratif",2],["administrative",2],["admis",0],["analyses",0],["argentine",2],["ateliers",2],["augmenté",0],["avouer",0],["basée",2],["bateaux",0],["bijoux",0],["boulevard",2],["britanniques",0],["bénéficier",2],["casque",0],["chaise",0],["commandement",0],["concerts",2],["conducteur",0],["confirmer",0],["conservation",2],["couilles",0],["dames",0],["devenus",0],["dimensions",2],["douceur",0],["débuts",2],["décennies",2],["emplacement",0],["exact",1],["exécutif",2],["forment",2],["four",0],["fourni",0],["foutu",1],["francophone",2],["haha",2],["https",2],["ingénieurs",2],["inscrits",2],["inspiration",0],["king",0],["libéraux",2],["livrer",0],["mariée",1],["menaces",0],["mené",0],["métropole",2],["napoléon",0],["noires",0],["observation",0],["ondes",0],["opinions",2],["pacifique",0],["parent",0],["park",0],["patience",0],["piano",0],["possibilités",0],["publiés",2],["quarante",0],["quête",0],["restant",0],["riz",0],["récompense",0],["réformes",2],["réserves",0],["sauce",0],["scrutin",2],["spécialistes",2],["stable",0],["suivie",0],["tabac",0],["tendances",2],["terminée",0],["time",0],["tissu",0],["trône",0],["uniforme",0],["variété",2],["windows",2],["world",0],["énergétique",2],["éthique",0],["alternative",0],["amène",1],["android",2],["annuelle",2],["attendez",1],["attentats",2],["baie",0],["bains",0],["basket",0],["benoît",2],["bible",0],["californie",0],["carton",0],["catholiques",2],["chauffeur",0],["chimie",0],["cinquante",0],["comté",0],["congo",2],["continuent",0],["correctement",0],["crédits",2],["diminuer",2],["dirigé",0],["distinction",2],["dégâts",0],["dépasser",0],["excellence",0],["exceptionnel",0],["exercer",2],["fautes",2],["fidèles",0],["financières",2],["forêts",2],["golf",0],["grenoble",2],["gère",0],["habitudes",0],["habituellement",0],["hugo",0],["incident",0],["irak",0],["jules",0],["justin",0],["lentement",0],["littéralement",0],["légale",0],["marcel",0],["mary",1],["municipalité",2],["mères",0],["navigation",2],["norme",2],["oblige",0],["observe",0],["occident",2],["onu",2],["opportunité",0],["parait",0],["partant",0],["parvenir",0],["passagers",0],["passera",0],["photographe",0],["plaindre",0],["poitrine",0],["poudre",0],["professeurs",0],["prétexte",0],["qualifié",0],["raisonnable",0],["rassemblement",0],["recueil",2],["remarquable",0],["remercier",1],["respectivement",2],["ressort",0],["retrouvent",2],["retrouvez",2],["rive",2],["rois",0],["réagir",0],["sam",1],["smith",0],["sons",0],["stupide",1],["symptômes",0],["tape",0],["tenant",0],["tombée",1],["touristes",0],["traverser",0],["tromper",0],["urbain",2],["utilisateur",2],["utilisées",2],["volumes",2],["âgé",0],["électorale",2],["acide",0],["adversaires",2],["agression",0],["allaient",0],["appelait",1],["appelés",0],["attaché",0],["aussitôt",0],["auxquels",2],["belges",2],["bite",0],["bonsoir",1],["box",2],["caractères",2],["chrétienne",2],["cités",2],["conformément",2],["cote",0],["créateur",0],["diffusé",0],["donnera",0],["dose",0],["débit",2],["défenseur",2],["effectif",2],["entourage",2],["explications",0],["expédition",0],["faciliter",2],["fatigue",0],["forfait",2],["formidable",1],["fraude",0],["fumer",0],["gratuite",0],["inférieure",2],["inspecteur",1],["intentions",0],["irlande",0],["italiens",0],["jardins",2],["joint",0],["laval",2],["leçons",0],["listes",2],["marier",1],["master",2],["mentir",1],["menée",2],["merveilleux",1],["mince",1],["misère",0],["nancy",0],["naturels",2],["négatif",0],["ours",0],["ouverts",0],["permanente",0],["pollution",2],["portait",0],["poulet",1],["programmation",2],["promesses",0],["provoquer",0],["publications",2],["recul",0],["regardant",0],["remet",0],["responsabilités",0],["restait",0],["réveille",0],["sacs",0],["satisfait",0],["scott",1],["secondaires",0],["serveur",0],["signaler",0],["sixième",0],["suffisant",0],["survie",0],["sœurs",0],["taxi",1],["traditionnelle",2],["trait",0],["traverse",0],["tribune",2],["trouble",0],["veuillez",1],["vieilles",0],["élite",0],["éventuellement",2],["abandon",2],["abonnés",2],["accorde",0],["ambition",0],["anges",0],["appuie",0],["attaqué",0],["aube",0],["aventures",0],["blanches",0],["bouton",0],["bronze",2],["calais",2],["cannes",2],["catastrophe",0],["chair",0],["cherchez",1],["clan",0],["clip",2],["collectivités",2],["compromis",0],["compréhension",0],["conclusions",0],["diamètre",2],["dénonce",2],["exister",0],["facture",0],["façons",0],["félicitations",1],["habitant",2],["lee",1],["maternelle",0],["modification",2],["numéros",0],["néo",2],["offrent",2],["parts",0],["poil",0],["poutine",2],["prenne",0],["prie",1],["précédentes",2],["précédents",2],["présentes",0],["publie",2],["québécoise",2],["rage",0],["remporter",2],["répéter",0],["semi",2],["serge",2],["souveraineté",2],["statistique",2],["séances",0],["tva",2],["universel",2],["utiles",0],["utilité",0],["vocation",2],["voisine",0],["égal",0],["accorder",0],["achats",2],["actuelles",2],["admettre",0],["affirmer",2],["afp",2],["apparaître",0],["apprécié",0],["assumer",0],["bail",0],["banc",0],["bosser",0],["chanteuse",0],["chimiques",0],["civilisation",0],["colonne",0],["commerciaux",2],["constamment",0],["constante",2],["craint",0],["crier",0],["criminel",0],["césar",0],["danser",1],["devront",0],["domination",2],["dvd",0],["déclarations",0],["dépression",0],["existait",0],["exposé",0],["fesses",1],["genres",2],["girl",0],["gosse",1],["graphique",2],["gâteau",1],["indépendants",2],["infrastructures",2],["intellectuelle",2],["intense",0],["joindre",1],["las",0],["libérer",0],["malheur",0],["mali",2],["manifestants",2],["marne",2],["marquée",2],["mathieu",2],["mien",1],["miracle",0],["modifications",2],["motivation",0],["noble",0],["optique",2],["ouvertes",0],["photographie",0],["plafond",0],["pomme",0],["porno",0],["procéder",0],["progression",2],["proportion",2],["présentant",2],["recommande",0],["rendus",0],["rouen",2],["roues",0],["rêver",0],["stéphane",2],["suspect",1],["talents",0],["toronto",2],["trajet",0],["trouvera",1],["ultime",0],["veste",1],["viendra",1],["vingtaine",0],["vols",0],["écologique",2],["éliminer",0],["épaule",0],["évoluer",2],["actuels",2],["agriculteurs",2],["appuyer",0],["armé",0],["baby",0],["baise",0],["bancaire",0],["bertrand",2],["boss",0],["boy",0],["caroline",0],["centrales",2],["climatique",2],["colle",0],["commerciales",2],["complexes",2],["conclure",0],["conserve",2],["contacts",0],["contemporain",2],["dictionnaire",2],["disney",2],["durer",0],["décor",0],["dédié",2],["délégation",2],["démission",0],["dénoncer",0],["ecole",2],["enlève",1],["entouré",0],["escalier",0],["externe",2],["faiblesse",0],["fierté",0],["fournit",2],["gardé",1],["globale",2],["grace",1],["indien",0],["informer",0],["jeanne",0],["management",2],["manager",0],["modes",2],["musicale",0],["méditerranée",2],["oppose",2],["options",0],["ordonnance",0],["originaire",2],["parking",0],["parlais",1],["permanence",0],["pilotes",0],["pommes",0],["ponts",0],["portugais",2],["poule",0],["pourrez",1],["promouvoir",2],["propagande",2],["protège",0],["préserver",0],["puissante",0],["quai",0],["quotidienne",2],["raciste",0],["raymond",0],["retenu",0],["retire",0],["robot",0],["romans",0],["roue",0],["récent",0],["régulière",2],["résume",2],["réunions",0],["rôles",0],["socialistes",2],["sondages",2],["soudain",0],["stratégique",2],["tirage",2],["tube",0],["var",2],["versailles",2],["visites",0],["volé",1],["votes",0],["voyait",0],["xavier",2],["épargne",0],["abonnement",2],["accusation",0],["aile",0],["aimait",1],["ampleur",2],["apparaissent",2],["arrivera",1],["attire",0],["barbe",0],["blonde",0],["bloqué",0],["boule",0],["calmer",0],["camarades",0],["cassé",1],["chicago",1],["choisit",0],["clientèle",2],["conclu",0],["conquête",2],["consultation",0],["costume",1],["crâne",0],["curiosité",0],["célibataire",0],["descente",0],["distingue",2],["doc",1],["duquel",2],["dépit",0],["employeur",2],["excès",0],["failli",1],["fausses",0],["fontaine",0],["fuir",1],["fumée",0],["féminine",0],["genoux",1],["guitare",0],["habitation",2],["hall",0],["hôpitaux",0],["impressionnant",0],["instance",2],["interdire",2],["internes",0],["jones",0],["jérôme",2],["livré",0],["location",0],["logo",2],["lâcher",0],["manifeste",0],["mathématiques",2],["menu",0],["monuments",2],["moyennes",2],["mécanisme",0],["occidentale",2],["parfum",0],["passages",2],["phrases",0],["pires",0],["polémique",2],["procédures",2],["prévoir",0],["pyrénées",2],["qualification",2],["rendement",2],["rivières",2],["réduite",2],["républicains",2],["révolutionnaire",0],["serre",0],["sexuel",0],["sms",0],["soigner",0],["soirées",0],["spécifiques",2],["stabilité",2],["statue",0],["suggère",0],["traitements",2],["usines",0],["vapeur",0],["vendeur",0],["épée",1],["abandonne",0],["aie",1],["anna",1],["arabie",2],["architecte",0],["assurances",0],["bol",0],["centaine",0],["coalition",2],["collections",2],["combinaison",0],["concentrer",0],["connaissais",1],["contacter",0],["conte",0],["couches",0],["cris",0],["culturelles",2],["diagnostic",0],["didier",2],["dirai",1],["doutes",0],["dragon",0],["découvertes",2],["décrire",0],["démontrer",2],["esclaves",0],["espagnole",2],["fabrique",0],["familial",0],["fatigué",1],["fermée",0],["figaro",2],["flash",0],["futurs",2],["gain",2],["gestes",0],["grandi",1],["gêne",0],["imagination",0],["introduit",0],["inventé",0],["issu",2],["jambe",1],["jeté",1],["jérusalem",0],["louise",0],["lourde",0],["légal",0],["législation",2],["manquent",0],["ment",0],["mesurer",0],["metz",2],["monument",2],["municipale",2],["musiciens",0],["nés",0],["pile",0],["placée",0],["prenait",0],["prestation",2],["profs",0],["promet",0],["prononcé",0],["provisoire",0],["prévenu",0],["psychologique",0],["purement",2],["représenté",2],["retiré",0],["roche",0],["réalisés",2],["réveiller",1],["satisfaction",0],["sauvé",1],["similaires",2],["smartphone",2],["souligne",2],["spectacles",2],["spéciales",0],["surveiller",1],["sébastien",2],["séparer",0],["tarif",2],["trous",0],["ukraine",2],["unes",2],["urbaine",2],["volontaires",0],["vraies",0],["époux",0],["évaluer",0],["alimentaires",2],["altitude",0],["amuser",1],["animé",2],["anonyme",0],["arrestation",0],["arrêtés",0],["assise",0],["attentes",0],["automatiquement",2],["benjamin",0],["bloquer",0],["bosse",1],["brut",2],["caméras",1],["cardiaque",1],["carrefour",2],["cessé",0],["citation",0],["codes",0],["confort",0],["congé",0],["connaissait",0],["conservé",2],["contraintes",2],["cuir",0],["câble",0],["destinés",2],["directrice",0],["dirigeant",0],["donald",0],["dépassé",0],["dépense",0],["déposé",0],["encourager",0],["exige",0],["exigences",2],["fonctionner",0],["gosses",1],["herbe",0],["industries",0],["intervient",2],["intéresser",0],["invitation",0],["jazz",0],["lancée",0],["lorraine",2],["malheureux",0],["masculin",0],["microsoft",2],["mobiles",2],["modifié",0],["monstre",1],["netflix",2],["obama",2],["orchestre",0],["pattes",0],["pleinement",0],["pompiers",0],["productions",2],["racines",0],["ray",1],["remplace",0],["romaine",2],["romantique",1],["rugby",2],["senti",1],["sexuelles",0],["soupe",0],["spécialisé",2],["survivre",1],["symbolique",2],["synthèse",2],["tokyo",0],["tournant",0],["traditionnel",2],["vagues",0],["versions",2],["vivants",0],["accordé",0],["accuse",0],["acquérir",2],["aperçu",0],["assistant",0],["autonome",2],["baron",0],["barrage",0],["brillant",0],["béton",0],["camille",0],["canard",0],["case",0],["cathédrale",2],["causé",0],["cave",0],["changent",0],["chérie",1],["cirque",0],["commander",0],["compagnon",0],["comportements",2],["comprenant",2],["confusion",0],["contribuer",2],["contribué",2],["copains",0],["courts",0],["dignité",0],["diminution",2],["délit",0],["désigne",2],["encontre",0],["enquêtes",0],["esthétique",2],["extraits",2],["figures",2],["ford",0],["francophones",2],["french",0],["garantir",0],["germain",2],["identique",0],["indiens",0],["individuelle",2],["isabelle",0],["johnny",1],["league",2],["levée",0],["libéré",0],["louer",0],["marchand",0],["maréchal",2],["mentale",0],["mentionne",2],["meubles",0],["mienne",1],["montrant",2],["médiatique",2],["mépris",0],["nomme",0],["panne",0],["panneaux",0],["philosophe",2],["play",2],["prestations",2],["prononcer",0],["provoque",0],["présentés",2],["ramène",1],["rapides",0],["relatif",2],["relatives",2],["religions",2],["rendue",0],["reproche",0],["reproduction",2],["rigueur",2],["robin",0],["roses",0],["régionales",2],["réparer",1],["républicain",2],["satisfaire",0],["sauvages",0],["sensibles",0],["sols",2],["sonne",1],["spécialisée",2],["spéciaux",0],["supérieurs",0],["suspension",0],["sénégal",2],["tenait",0],["tendre",0],["troupe",0],["universelle",2],["étend",2],["œufs",0],["agences",0],["alice",1],["annonces",0],["asile",0],["assaut",0],["attaquant",2],["avancée",0],["bourgeois",2],["bourgogne",2],["canton",2],["chimique",0],["colombie",2],["communs",0],["condamnation",0],["connexion",0],["connues",2],["consacrée",2],["courants",2],["crainte",0],["demandant",0],["divorce",1],["donna",0],["doublé",0],["dramatique",0],["déclarer",0],["délire",0],["démonstration",0],["déroule",0],["désigné",2],["espagnols",2],["espoirs",0],["espérons",0],["expansion",2],["extérieure",2],["facilité",2],["finis",0],["fiscal",2],["foie",0],["gaulle",2],["ignorer",0],["imaginaire",0],["intensité",2],["intégré",2],["laver",0],["lucas",0],["majesté",1],["maritimes",2],["musulmane",2],["mémoires",2],["observations",2],["off",0],["oscar",0],["panique",0],["passées",0],["perception",2],["permanent",0],["physiquement",0],["pique",0],["placés",0],["plats",0],["proposent",2],["protocole",0],["préférence",0],["psg",2],["raconté",1],["rangs",0],["renault",2],["renseignement",0],["restée",0],["roule",0],["rouler",0],["roux",0],["réussit",0],["soixante",2],["stock",0],["susceptibles",2],["sévère",0],["sûreté",0],["tentatives",2],["touristique",2],["traditions",0],["variable",2],["vendus",0],["vengeance",0],["vif",0],["vus",1],["your",0],["écologie",2],["édifice",2],["établie",2],["établit",2],["évite",0],["absolu",0],["afficher",2],["aimais",1],["amazon",2],["anglo",2],["appart",0],["arsenal",2],["avancé",0],["bouteilles",0],["brown",0],["bébés",1],["cameroun",2],["canapé",0],["chiant",0],["cimetière",0],["comptait",0],["connaitre",0],["considérés",2],["constaté",2],["constituer",2],["constructeur",2],["dangereuse",0],["demandez",1],["devint",0],["district",0],["défauts",0],["déficit",2],["démocrate",2],["désigner",2],["entrées",0],["etienne",2],["exceptionnelle",0],["exercices",0],["expertise",2],["fauteuil",0],["fragile",0],["from",0],["gabriel",0],["garage",1],["gravité",0],["géographique",2],["hamon",2],["hitler",0],["hélas",0],["illustre",2],["immeubles",0],["inclus",0],["interventions",2],["junior",0],["largeur",2],["latine",2],["lord",0],["malin",1],["miel",0],["mobilisation",2],["moche",0],["modeste",0],["musiques",2],["négocier",0],["opérateur",0],["organes",0],["panneau",0],["parlementaires",2],["partent",0],["passez",1],["pension",0],["pib",2],["piège",1],["plaire",0],["plaques",0],["pratiquer",0],["prisonnier",0],["protégé",0],["prévues",2],["psychologie",0],["quiconque",1],["rappelé",0],["reconnue",0]];
+const VTHEMES=[...new Set(VOCAB.map(v=>v[1]))];
+const BOXES=[0,1,3,7,21];
+
+/* ---------------- question bank ---------------- */
+/* [topic, prompt, [options], answerIdx, explanation] */
+const Q=[
+["A1 · être / avoir","Je ___ indienne.",["suis","es","est"],0,"Je suis. The je form of être is suis."],
+["A1 · être / avoir","Nous ___ deux enfants.",["sommes","avons","ont"],1,"Avoir for possession: nous avons."],
+["A1 · être / avoir","Ils ___ à Paris.",["est","sont","es"],1,"Ils/elles sont."],
+["A1 · être / avoir","Tu ___ faim ?",["es","as","a"],1,"Hunger uses avoir: avoir faim, avoir soif, avoir froid."],
+["A1 · articles & genre","___ maison est grande.",["Le","La","Les"],1,"Maison is feminine: la maison."],
+["A1 · articles & genre","J'ai ___ frère.",["un","une","des"],0,"Frère is masculine singular: un frère."],
+["A1 · articles & genre","Elle achète ___ fleurs.",["un","de la","des"],2,"Plural indefinite: des fleurs."],
+["A1 · articles & genre","___ problème est difficile.",["Le","La","L'"],0,"Problème is masculine despite the -e ending."],
+["A1 · verbes -ER","Vous ___ français.",["parle","parlez","parlent"],1,"Vous form of -er verbs ends in -ez."],
+["A1 · verbes -ER","Elles ___ à Kolkata.",["habite","habites","habitent"],2,"Elles → -ent (silent)."],
+["A1 · verbes -ER","J'___ le café.",["aime","aimes","aiment"],0,"Je aime → j'aime."],
+["A1 · verbes -ER","Nous ___ beaucoup.",["travaille","travaillons","travaillez"],1,"Nous → -ons."],
+["A1 · négation","Je ___ parle ___ anglais.",["ne / pas","pas / ne","ne / rien"],0,"Ne wraps before the verb, pas after: je ne parle pas."],
+["A1 · négation","Correct negative of « Il mange » :",["Il ne mange pas","Il mange ne pas","Il n'est pas mange"],0,"Ne + verb + pas."],
+["A1 · négation","« Tu as un stylo ? » — « Non, je n'ai ___ stylo. »",["un","pas de","le"],1,"After a negation the indefinite article becomes de: pas de stylo."],
+["A1 · questions","___ tu viens ce soir ?",["Est-ce que","Qu'est-ce que","Quel"],0,"Est-ce que turns a statement into a yes/no question."],
+["A1 · questions","___ habitez-vous ?",["Où","Que","Qui"],0,"Où asks where."],
+["A1 · questions","___ est ton nom ?",["Quel","Quelle","Qui"],0,"Nom is masculine: quel."],
+["A1 · aller / faire","Je ___ au bureau.",["vais","va","allons"],0,"Je vais."],
+["A1 · aller / faire","Nous ___ les courses le samedi.",["faisons","faites","font"],0,"Nous faisons."],
+["A1 · aller / faire","Elle va ___ marché.",["à le","au","à la"],1,"à + le contracts to au."],
+["A1 · aller / faire","Ils vont ___ États-Unis.",["à les","aux","en"],1,"à + les contracts to aux."],
+["A1 · nombres & heure","Il est 15h30 :",["Il est trois heures et demie","Il est trois heures et demi","Il est trois heure et demie"],0,"Demie agrees with heure (feminine)."],
+["A1 · nombres & heure","80 s'écrit :",["huitante","quatre-vingts","octante"],1,"Quatre-vingts in standard French."],
+["A2 · passé composé (avoir)","Hier, j'___ mangé au restaurant.",["ai","suis","a"],0,"Manger takes avoir: j'ai mangé."],
+["A2 · passé composé (avoir)","Nous ___ fini le travail.",["sommes","avons","ont"],1,"Nous avons fini."],
+["A2 · passé composé (avoir)","Le participe passé de « prendre » :",["prendu","pris","prit"],1,"Pris. Irregular."],
+["A2 · passé composé (avoir)","Elle a ___ un livre.",["lu","lit","lisu"],0,"Lire → lu."],
+["A2 · passé composé (être)","Elle ___ allée au cinéma.",["a","est","été"],1,"Aller takes être: elle est allée."],
+["A2 · passé composé (être)","Ils sont ___ à huit heures.",["parti","partis","partie"],1,"With être, the participle agrees: ils partis."],
+["A2 · passé composé (être)","Which verb takes être?",["manger","venir","finir"],1,"Venir is on the être list (movement/state change)."],
+["A2 · passé composé (être)","Nous ___ nés en Inde.",["avons","sommes","étions"],1,"Naître takes être: nous sommes nés."],
+["A2 · imparfait","Quand j'étais petite, je ___ souvent au parc.",["suis allée","allais","irai"],1,"Repeated past habit → imparfait."],
+["A2 · imparfait","Il ___ beau hier.",["faisait","a fait","fera"],0,"Weather description in the past → imparfait."],
+["A2 · imparfait","Nous ___ la télévision quand il est arrivé.",["avons regardé","regardions","regarderons"],1,"Ongoing background action → imparfait."],
+["A2 · futur","Demain je ___ mes clients.",["appelle","vais appeler","ai appelé"],1,"Futur proche: aller + infinitive."],
+["A2 · futur","L'année prochaine, nous ___ en France.",["irons","allons","allions"],0,"Futur simple of aller: nous irons."],
+["A2 · partitifs","Je voudrais ___ eau.",["de la","de l'","du"],1,"Eau is feminine but starts with a vowel: de l'eau."],
+["A2 · partitifs","Il boit ___ café.",["de la","du","des"],1,"Café is masculine: du café."],
+["A2 · partitifs","Je ne mange pas ___ viande.",["de la","de","du"],1,"Negation flattens the partitive to de."],
+["A2 · verbes pronominaux","Je ___ lève à six heures.",["me","se","te"],0,"Se lever → je me lève."],
+["A2 · verbes pronominaux","Elle s'est ___ tôt.",["couché","couchée","couchées"],1,"Reflexive with no following object → agrees with elle."],
+["A2 · verbes pronominaux","Elle s'est ___ les cheveux.",["lavé","lavée","lavées"],0,"Object follows the verb → no agreement."],
+["A2 · pronoms COD / COI","Tu vois Marie ? — Oui, je ___ vois.",["la","lui","elle"],0,"Direct object → la."],
+["A2 · pronoms COD / COI","Tu parles à Paul ? — Oui, je ___ parle.",["le","lui","la"],1,"Parler à → indirect → lui."],
+["A2 · pronoms COD / COI","Je ___ ai donné le dossier. (à mes collègues)",["les","leur","eux"],1,"Indirect plural → leur."],
+["A2 · comparer","Elle est ___ grande que moi.",["plus","plus de","très"],0,"plus + adjective + que."],
+["A2 · comparer","C'est le ___ restaurant de la ville.",["meilleur","mieux","plus bon"],0,"Bon → meilleur, never plus bon."],
+["B1 · imparfait vs PC","Je ___ quand le téléphone ___.",["dormais / a sonné","ai dormi / sonnait","dormais / sonnait"],0,"Background imparfait interrupted by a completed action in passé composé."],
+["B1 · imparfait vs PC","Elle ___ trois fois hier.",["appelait","a appelé","appelle"],1,"A counted, completed action → passé composé."],
+["B1 · pronoms relatifs","La femme ___ travaille ici est ma collègue.",["qui","que","dont"],0,"Subject of the clause → qui."],
+["B1 · pronoms relatifs","Le dossier ___ j'ai lu était long.",["qui","que","dont"],1,"Direct object of the clause → que."],
+["B1 · pronoms relatifs","C'est la chose ___ j'ai besoin.",["que","dont","où"],1,"avoir besoin de → dont."],
+["B1 · pronoms relatifs","Le jour ___ elle est arrivée…",["que","où","dont"],1,"Time and place → où."],
+["B1 · y et en","Tu vas à Paris ? — Oui, j'___ vais.",["y","en","le"],0,"à + place → y."],
+["B1 · y et en","Tu veux du café ? — Oui, j'___ veux.",["y","en","le"],1,"de / partitive quantity → en."],
+["B1 · y et en","Combien de dossiers as-tu ? — J'___ ai cinq.",["y","en","les"],1,"Quantity → en, even with a number."],
+["B1 · conditionnel / si","Si j'avais le temps, je ___.",["viendrai","viendrais","viendrais pas"],1,"Si + imparfait → conditionnel présent."],
+["B1 · conditionnel / si","Si tu ___ demain, appelle-moi.",["viens","viendrais","viendras"],0,"Si + présent for a real future condition."],
+["B1 · conditionnel / si","___-vous m'aider, s'il vous plaît ?",["Pouvez","Pourriez","Pouviez"],1,"Conditional for politeness: pourriez-vous."],
+["B1 · subjonctif","Il faut que tu ___ maintenant.",["pars","partes","partiras"],1,"Il faut que → subjunctive."],
+["B1 · subjonctif","Bien qu'il ___ tard, je continue.",["est","soit","sera"],1,"Bien que always triggers the subjunctive."],
+["B1 · subjonctif","Je pense qu'elle ___ raison.",["a","ait","aurait"],0,"Penser in the affirmative takes the indicative."],
+["B1 · subjonctif","Je veux que vous ___ le rapport.",["lisez","lisiez","lirez"],1,"Vouloir que → subjunctive."],
+["B2 · conditionnel passé","J'___ le savoir plus tôt.",["aime","aurais aimé","aimerais"],1,"Past conditional expresses regret about what didn't happen."],
+["B2 · conditionnel passé","Si j'avais su, je ___ autrement.",["agirais","aurais agi","agissais"],1,"Si + plus-que-parfait → conditionnel passé."],
+["B2 · infinitif passé","___ mangé, il est sorti.",["Après avoir","Après","Après ayant"],0,"Après + past infinitive: après avoir mangé."],
+["B2 · passif","Le rapport ___ par le directeur.",["a signé","a été signé","est signant"],1,"Passive: être + past participle."],
+["B2 · passif","More natural French for « the door opened »:",["La porte a été ouverte","La porte s'est ouverte","On a ouvert la porte par"],1,"French prefers pronominal or on over the passive."],
+["B2 · registre","Most formal way to ask:",["Tu peux m'aider ?","Vous pouvez m'aider ?","Auriez-vous l'amabilité de m'aider ?"],2,"Conditional + set phrase = soutenu register."],
+["B2 · idiomes","« Ça me prend la tête » veut dire :",["ça m'énerve","j'ai mal à la tête","je ne comprends pas"],0,"Familiar register: it winds me up."],
+["B2 · connecteurs","___ les difficultés, nous avons réussi.",["Malgré","Bien que","Puisque"],0,"Malgré takes a noun; bien que takes a clause."]
+];
+
+const LEVELS=[
+ {n:"A1",h:90,label:"Débutant"},
+ {n:"A2",h:200,label:"Élémentaire"},
+ {n:"B1",h:400,label:"Intermédiaire"},
+ {n:"B2",h:650,label:"Avancé"}
+];
+const KINDS=[["l","Listening","in"],["r","Reading","in"],["g","Grammar","in"],["s","Speaking","out"],["w","Writing","out"]];
+
+let S=null,tab="today",mFilter="ALL",uFilter="A2",qFilter="A2",cur=null,answered=false;
+let vLv="A2",vTheme="ALL",vCard=null,vShown=false,vMode="browse",vBand=0;
+
+const iso=d=>d.toISOString().slice(0,10);
+const today=()=>iso(new Date());
+const shift=(s,n)=>{const d=new Date(s+"T00:00:00");d.setDate(d.getDate()+n);return iso(d)};
+const dbet=(a,b)=>Math.round((new Date(b+"T00:00:00")-new Date(a+"T00:00:00"))/864e5);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function blank(){return{log:{},quiz:{},open:{},done:{},startLv:"A2",voc:{},mine:[]}}
+async function load(){try{const r=await window.storage.get(KEY);S=r?JSON.parse(r.value):blank()}catch(e){S=blank()}
+ if(!S.log)S.log={};if(!S.quiz)S.quiz={};if(!S.open)S.open={};if(!S.done)S.done={};if(!S.startLv)S.startLv="A2";
+ if(!S.voc)S.voc={};if(!S.mine)S.mine=[];if(!S.known)S.known={}}
+let tmr;function save(){clearTimeout(tmr);tmr=setTimeout(async()=>{try{await window.storage.set(KEY,JSON.stringify(S));flash("Saved",'var(--vert)')}catch(e){flash("Not saved",'var(--rouge)')}},200)}
+function flash(t,c){const f=document.getElementById("flash");if(!f)return;f.textContent=t;f.style.color=c;f.classList.add("on");setTimeout(()=>f.classList.remove("on"),1500)}
+
+function mins(d){const e=S.log[d];if(!e)return 0;return KINDS.reduce((a,[k])=>a+(e[k]||0),0)}
+function totals(){let all=0,out=0;Object.keys(S.log).forEach(d=>{const e=S.log[d];KINDS.forEach(([k,,f])=>{all+=e[k]||0;if(f==="out")out+=e[k]||0})});return{h:all/60,outRatio:all?out/all:null,all}}
+function topicAcc(){const o={};Object.entries(S.quiz).forEach(([t,v])=>{const n=v.r+v.w;if(n>=3)o[t]=v.r/n});return o}
+function levelAcc(lv){let r=0,w=0;Object.entries(S.quiz).forEach(([t,v])=>{if(t.startsWith(lv)){r+=v.r;w+=v.w}});return{n:r+w,acc:(r+w)?r/(r+w):0}}
+
+const BASE={A1:0,A2:90};
+function effH(){return totals().h+(BASE[S.startLv]||0)}
+function estimate(){
+ const h=effH();let idx=S.startLv==="A2"?0:-1;
+ for(let i=idx+1;i<LEVELS.length;i++){
+   const L=LEVELS[i],a=levelAcc(L.n);
+   if(h>=L.h&&a.n>=12&&a.acc>=0.75)idx=i;else break;
+ }
+ const nextL=LEVELS[Math.min(idx+1,3)];
+ const prevH=idx<0?0:LEVELS[idx].h;
+ const pct=Math.min(100,Math.round(((h-prevH)/(nextL.h-prevH))*100));
+ return{idx,label:idx<0?"A0":LEVELS[idx].n,working:nextL.n,pct:Math.max(0,pct),hours:h};
+}
+
+/* ---------- render ---------- */
+function render(){
+ const e=estimate(),t=totals(),eh=effH();
+ document.getElementById("app").innerHTML=`
+ <div class="head">
+   <div class="head-row">
+     <div>
+       <div class="lbl">Cahier de français · commencé le 28 juillet 2026</div>
+       <div class="title">De zéro au B2</div>
+       <div class="sub">${DAILY} min/jour · <b>${t.h.toFixed(1)} h</b> logged${BASE[S.startLv]?` + ${BASE[S.startLv]} h credited for A1`:""} · jour ${Math.max(0,dbet(START,today()))+1}</div>
+     </div>
+     <div class="now">
+       <div class="lbl">Niveau estimé</div>
+       <div class="now-lvl">${e.label}</div>
+       <div class="now-note">${e.idx<0?"working toward A1":"working toward "+e.working} · ${e.pct}%</div>
+     </div>
+   </div>
+   <div class="ladder">
+     ${LEVELS.map((L,i)=>{
+       const done=e.idx>=i;
+       const prevH=i?LEVELS[i-1].h:0;
+       const f=done?100:Math.max(0,Math.min(100,((eh-prevH)/(L.h-prevH))*100));
+       return `<div class="rung ${done?"done":""}"><div class="rung-bar"><div class="rung-fill" style="width:${f}%"></div></div>
+       <div class="rung-cap"><b>${L.n}</b><span>${L.h}h</span></div></div>`}).join("")}
+   </div>
+ </div>
+ <div class="tabs" role="tablist">
+   ${[["today","Aujourd'hui"],["learn","Parcours"],["practice","Grammaire"],["vocab","Vocabulaire"],["media","Films & musique"],["progress","Progrès"]]
+     .map(([k,n])=>`<button class="tab" role="tab" data-tab="${k}" aria-selected="${tab===k}">${n}</button>`).join("")}
+ </div>
+ <div class="pane" ${tab!=="today"?"hidden":""}>${paneToday()}</div>
+ <div class="pane" ${tab!=="learn"?"hidden":""}>${paneLearn()}</div>
+ <div class="pane" ${tab!=="practice"?"hidden":""}>${panePractice()}</div>
+ <div class="pane" ${tab!=="vocab"?"hidden":""}>${paneVocab()}</div>
+ <div class="pane" ${tab!=="media"?"hidden":""}>${paneMedia()}</div>
+ <div class="pane" ${tab!=="progress"?"hidden":""}>${paneProgress()}</div>`;
+ wire();
+}
+
+function firstUnit(){
+ const order=["A1","A2","B1","B2"],from=order.indexOf(S.startLv);
+ for(let i=0;i<UNITS.length;i++){
+   if(order.indexOf(UNITS[i].lv)<from)continue;
+   if(!S.done[i])return{u:UNITS[i],i};
+ }
+ return{u:UNITS[UNITS.length-1],i:UNITS.length-1};
+}
+function paneToday(){
+ const d=S.log[today()]||{},m=mins(today()),pct=Math.min(100,(m/DAILY)*100);
+ const {u:unit,i:ui}=firstUnit();
+ return `
+ <div class="grid2">
+  <div>
+   <h3 class="sec">Log today — minutes</h3>
+   <div class="timer-grid">
+    ${KINDS.map(([k,n,f])=>`<div class="tcell ${f==="out"?"out":""}"><span class="lbl">${n}</span>
+      <input type="number" inputmode="numeric" pattern="[0-9]*" min="0" max="600" step="5" data-k="${k}" value="${d[k]||0}">
+      <span class="bump"><button class="tiny" data-bump="${k}" data-by="-5" aria-label="less ${n}">−</button><button class="tiny" data-bump="${k}" data-by="15" aria-label="more ${n}">+15</button></span></div>`).join("")}
+   </div>
+   <div class="dayline">
+     <div class="prog"><div class="prog-fill" style="width:${pct}%"></div><div class="prog-txt">${m} / ${DAILY} min</div></div>
+     <button id="save-day">Save day</button><span class="flash" id="flash"></span>
+   </div>
+   <div class="strip">
+     ${Array.from({length:28},(_,i)=>{const dd=shift(today(),-(27-i)),mm=mins(dd);
+       const f=mm>=DAILY?3:mm>=60?2:mm>0?1:0;
+       return `<div class="sq ${dd===today()?"today":""}" data-f="${f}" title="${dd} — ${mm} min"></div>`}).join("")}
+   </div>
+   <p class="foot" style="margin-top:8px">Last 28 days. Orange-outlined square is today.</p>
+  </div>
+  <div>
+   <h3 class="sec">A 2-hour template</h3>
+   <div class="plan">
+    <div class="plan-item"><span class="plan-min">25′</span><span class="plan-body"><a href="${R.lt.u}" target="_blank" rel="noopener">Language Transfer</a><span class="d">Audio course. Pause and answer aloud — that's the point of it.</span></span></div>
+    <div class="plan-item"><span class="plan-min">30′</span><span class="plan-body">Current unit: <span class="fr">${esc(unit.fr)}</span><span class="d">Grammar study + exercises from the Parcours tab.</span></span></div>
+    <div class="plan-item"><span class="plan-min">20′</span><span class="plan-body">Grammar drills<span class="d">The Grammaire tab. Feeds your weak-topic diagnosis.</span></span></div>
+    <div class="plan-item"><span class="plan-min">25′</span><span class="plan-body"><a href="${R.tv5.u}" target="_blank" rel="noopener">TV5MONDE</a> or <a href="${R.rfi.u}" target="_blank" rel="noopener">RFI</a><span class="d">Listening with transcript, at your level.</span></span></div>
+    <div class="plan-item"><span class="plan-min">20′</span><span class="plan-body"><b>Output — non-negotiable</b><span class="d">${esc(unit.task)}</span></span></div>
+   </div>
+   <button class="ghost" id="unit-done" style="margin-top:12px">Mark unit ${String(ui+1).padStart(2,"0")} complete</button>
+   <p class="foot" style="margin-top:14px">The last 20 minutes is the one that fails first and matters most. Everything above it is input; only that block builds production.</p>
+   <div class="hr" style="margin:18px 0"></div>
+   <h3 class="sec">Starting level</h3>
+   <div class="filters">${["A1","A2"].map(l=>`<button class="chip" data-start="${l}" aria-pressed="${S.startLv===l}">Start at ${l}</button>`).join("")}</div>
+   <p class="foot">Set to A2. A1 units and A1 drills stay available for review — nothing is hidden, the plan just doesn't begin there. Starting at A2 credits 90 hours of assumed prior knowledge toward the ladder, which is the standard A1 figure. That's an assumption, not logged time: if the A2 drills come out under 70%, drop back to A1 and the credit disappears.</p>
+  </div>
+ </div>`;
+}
+
+function paneLearn(){
+ return `<h3 class="sec">Parcours — 26 units, A1 to B2</h3>
+ <p class="sec-note">Work them in order. Open a unit for its resources and its production task.</p>
+ <div class="filters">${["ALL","A1","A2","B1","B2"].map(f=>`<button class="chip" data-u="${f}" aria-pressed="${uFilter===f}">${f}</button>`).join("")}</div>
+ ${UNITS.map((u,i)=>{
+   if(uFilter!=="ALL"&&u.lv!==uFilter)return"";
+   const open=!!S.open[i];
+   return `<div class="unit ${S.done[i]?"is-done":""}">
+     <div class="unit-h" data-unit="${i}" role="button" tabindex="0" aria-expanded="${open}">
+       <span class="unit-n">${S.done[i]?"✓":String(i+1).padStart(2,"0")}</span>
+       <span class="unit-t"><span class="fr">${esc(u.fr)}</span> — <span style="color:var(--muted)">${esc(u.en)}</span></span>
+       <span class="unit-lv">${u.lv}${u.lv==="A1"&&S.startLv==="A2"?" · review":""}</span>
+       <span style="color:var(--muted);font-family:var(--mono);font-size:11px">${open?"−":"+"}</span>
+     </div>
+     <div class="unit-body" ${open?"":"hidden"}>
+       ${u.res.map(id=>{const r=R[id];return `<div class="res"><span class="t">${esc(r.k)}</span><a href="${r.u}" target="_blank" rel="noopener">${esc(r.t)}</a><span class="d"> — ${esc(r.d)}</span></div>`}).join("")}
+       <div class="task"><span class="lbl">Production task</span>${esc(u.task)}</div>
+       <button class="ghost" data-done="${i}" style="margin-top:11px">${S.done[i]?"Reopen unit":"Mark complete"}</button>
+     </div>
+   </div>`}).join("")}
+ <div class="hr"></div>
+ <h3 class="sec">Always-open tabs</h3>
+ ${["fle","law","con","kwi","ff","anki","forvo","tandem","italki","delf","lingq","freqdict","wikfreq"].map(id=>{const r=R[id];
+   return `<div class="res"><span class="t">${esc(r.k)}</span><a href="${r.u}" target="_blank" rel="noopener">${esc(r.t)}</a><span class="d"> — ${esc(r.d)}</span></div>`}).join("")}`;
+}
+
+function panePractice(){
+ const e=estimate(),t=totals();
+ let right=0,wrong=0;Object.values(S.quiz).forEach(v=>{right+=v.r;wrong+=v.w});
+ return `<div class="score">
+   <div><span class="lbl">Answered</span><span>${right+wrong}</span></div>
+   <div><span class="lbl">Accuracy</span><span>${right+wrong?Math.round(right/(right+wrong)*100)+"%":"—"}</span></div>
+   <div><span class="lbl">Topics seen</span><span>${Object.keys(S.quiz).length}</span></div>
+ </div>
+ <div class="filters">${["A1","A2","B1","B2","ALL"].map(f=>`<button class="chip" data-q="${f}" aria-pressed="${qFilter===f}">${f==="A1"?"A1 review":f}</button>`).join("")}</div>
+ <div id="qbox">${cur===null?`<div class="q"><p class="fr" style="font-size:16px;margin:0 0 14px">Prêt ? Drilling <b>${qFilter}</b>. The bank pulls hardest from topics you've been getting wrong.</p><button id="start-q">Start drilling</button></div>`:renderQ()}</div>`;
+}
+
+function renderQ(){
+ const q=Q[cur];
+ return `<div class="q">
+  <div class="q-top"><span class="lbl">${esc(q[0])}</span><span class="lbl">${Object.keys(S.quiz).length ? "" : "question 1"}</span></div>
+  <div class="q-txt">${esc(q[1])}</div>
+  ${q[2].map((o,i)=>`<button class="opt" data-opt="${i}">${esc(o)}</button>`).join("")}
+  <div id="expl"></div>
+ </div>`;
+}
+
+function pickQ(){
+ const acc=topicAcc();
+ const inLv=i=>qFilter==="ALL"||Q[i][0].startsWith(qFilter);
+ const all=Q.map((q,i)=>i).filter(inLv);
+ const weak=all.filter(i=>{const a=acc[Q[i][0]];return a!==undefined&&a<0.7});
+ const unseen=all.filter(i=>!S.quiz[Q[i][0]]);
+ const pool=Math.random()<0.55&&weak.length?weak:(unseen.length?unseen:all);
+ cur=pool[Math.floor(Math.random()*pool.length)];answered=false;
+}
+
+/* ---------------- vocabulary ---------------- */
+function allVocab(){return VOCAB.concat(S.mine.map(m=>[m.lv||"A2","Mes mots",m.fr,m.en,m.ex||""]))}
+function vocDue(){return allVocab().filter(v=>{const r=S.voc[v[2]];return !r||r.due<=today()})}
+function vocStats(){
+ const a=allVocab();let learning=0,solid=0,seen=0;
+ a.forEach(v=>{const r=S.voc[v[2]];if(r){seen++;r.b>=4?solid++:learning++}});
+ return{total:a.length,seen,learning,solid,due:vocDue().length};
+}
+function pickCard(){
+ let pool=vocDue().filter(v=>vLv==="ALL"||v[0]===vLv);
+ if(!pool.length)pool=vocDue();
+ if(!pool.length){vCard=null;return}
+ pool.sort((a,b)=>{const ra=S.voc[a[2]],rb=S.voc[b[2]];return (ra?ra.b:0)-(rb?rb.b:0)});
+ const head=pool.slice(0,Math.max(8,Math.ceil(pool.length*0.3)));
+ vCard=head[Math.floor(Math.random()*head.length)];vShown=false;
+}
+function gradeCard(ok){
+ const k=vCard[2],r=S.voc[k]||{b:0,due:today()};
+ r.b=ok?Math.min(4,r.b+1):0;
+ r.due=shift(today(),BOXES[r.b]||0);
+ if(!ok)r.due=today();
+ S.voc[k]=r;save();
+}
+function knownCount(){return FREQ.filter(f=>S.known[f[0]]).length}
+function breadth(){
+ const k=knownCount();
+ let band="pre-A1";
+ if(k>=4000)band="B2 breadth";else if(k>=2000)band="B1 breadth";else if(k>=1000)band="A2 breadth";else if(k>=500)band="A1 breadth";
+ return{k,band};
+}
+const REG=["","parlé","écrit"];
+function paneFreq(){
+ const b=breadth(),band=Math.max(0,Math.min(19,vBand||0));
+ const from=band*250,slice=FREQ.slice(from,from+250);
+ const marked=Object.keys(S.known).filter(w=>S.known[w]).length;
+ return `<div class="score">
+   <div><span class="lbl">Known</span><span id="kc">${b.k} / 5000</span></div>
+   <div><span class="lbl">Breadth</span><span style="font-size:15px;padding-top:4px">${b.band}</span></div>
+   <div><span class="lbl">This band</span><span>${slice.filter(f=>S.known[f[0]]).length} / 250</span></div>
+ </div>
+ <p class="sec-note">The 5,000 most frequent French words, ranked from a mixed corpus — books, news, Wikipedia, web and subtitles — so it isn't skewed to film dialogue. Tap a word you know. Words tagged <span class="rg s">parlé</span> are far more common in speech than in writing; <span class="rg w">écrit</span> means the reverse. Untagged words are common in both.</p>
+ <div class="filters">${Array.from({length:20},(_,i)=>`<button class="chip" data-band="${i}" aria-pressed="${band===i}">${i*250+1}–${(i+1)*250}</button>`).join("")}</div>
+ <div class="fwrap" id="freqwrap">
+   ${slice.map((f,i)=>`<span class="fw ${S.known[f[0]]?"kn":""} ${f[1]===1?"sp":f[1]===2?"wr":""}" data-w="${esc(f[0])}" role="button" tabindex="0" title="rank ${from+i+1}${f[1]?" · "+REG[f[1]]:""}">${esc(f[0])}</span>`).join("")}
+ </div>
+ <p class="foot" style="margin-top:14px">Look up anything unfamiliar on <a href="https://www.wordreference.com/fren/" target="_blank" rel="noopener" style="color:var(--bic)">WordReference</a> or <a href="https://fr.wiktionary.org/" target="_blank" rel="noopener" style="color:var(--bic)">Wiktionnaire</a>, then add it to your cards on the Cartes view.<br><br>
+ <b>Benchmarks.</b> A1 sits near 500 known words, A2 near 1,000, B1 near 2,000, B2 near 4,000. This list reaches 5,000, so B2 breadth is measurable on it directly — clear roughly the first 4,000 and vocabulary is no longer what's holding you back.<br><br>
+ <b>Source.</b> Rankings from the open-source wordfreq dataset (mixed written and spoken corpora), cross-referenced against an OpenSubtitles frequency list (CC BY-SA) to derive the register tags. Both are openly licensed.</p>`;
+}
+function paneVocab(){
+ const st=vocStats();
+ const nav=`<div class="filters">
+   <button class="chip" data-vmode="browse" aria-pressed="${vMode==="browse"}">Cartes</button>
+   <button class="chip" data-vmode="freq" aria-pressed="${vMode==="freq"}">Fréquence 2000</button>
+ </div>`;
+ if(vMode==="freq")return nav+paneFreq();
+ if(vMode==="review"){
+  const r=vCard?S.voc[vCard[2]]:null;
+  return `<div class="score">
+    <div><span class="lbl">Due now</span><span>${st.due}</span></div>
+    <div><span class="lbl">Learning</span><span>${st.learning}</span></div>
+    <div><span class="lbl">Solid</span><span>${st.solid}</span></div>
+    <div><span class="lbl">Bank</span><span>${st.total}</span></div>
+  </div>
+  ${vCard?`<div class="q vcard">
+    <div class="q-top"><span class="lbl">${esc(vCard[0])} · ${esc(vCard[1])}</span><span class="lbl">box ${r?r.b:0}/4</span></div>
+    <div class="vfr">${esc(vCard[2])}</div>
+    ${vShown?`<div class="ven">${esc(vCard[3])}</div>
+      ${vCard[4]?`<div class="vex fr">${esc(vCard[4])}</div>`:""}
+      <div class="vbtns"><button class="ghost" id="v-again">Encore</button><button id="v-ok">Je le savais</button></div>`
+     :`<div class="vbtns"><button id="v-show">Retourner la carte</button></div>`}
+   </div>`:`<div class="q"><p class="fr" style="margin:0 0 12px">Rien à réviser pour l'instant. Reviens demain.</p></div>`}
+  <button class="ghost" id="v-stop" style="margin-top:14px">Back to the list</button>`;
+ }
+ const list=allVocab().filter(v=>(vLv==="ALL"||v[0]===vLv)&&(vTheme==="ALL"||v[1]===vTheme));
+ return nav+`<div class="score">
+   <div><span class="lbl">Words</span><span>${st.total}</span></div>
+   <div><span class="lbl">Started</span><span>${st.seen}</span></div>
+   <div><span class="lbl">Solid</span><span>${st.solid}</span></div>
+   <div><span class="lbl">Due today</span><span>${st.due}</span></div>
+ </div>
+ <button id="v-start">Review ${st.due} card${st.due===1?"":"s"}</button>
+ <div class="hr"></div>
+ <div class="filters">${["A1","A2","B1","B2","ALL"].map(l=>`<button class="chip" data-vlv="${l}" aria-pressed="${vLv===l}">${l}</button>`).join("")}</div>
+ <div class="filters">${["ALL"].concat(VTHEMES,S.mine.length?["Mes mots"]:[]).map(t=>`<button class="chip" data-vth="${esc(t)}" aria-pressed="${vTheme===t}">${esc(t)}</button>`).join("")}</div>
+ <div class="vlist">
+ ${list.length?list.map(v=>{const r=S.voc[v[2]];
+   return `<div class="vrow">
+     <div><span class="vw fr">${esc(v[2])}</span> <span class="vg">${esc(v[3])}</span>
+     ${v[4]?`<span class="vex2 fr">${esc(v[4])}</span>`:""}</div>
+     <span class="vbox ${r&&r.b>=4?"ok":r?"mid":""}">${r?"■".repeat(r.b)+"□".repeat(4-r.b):"□□□□"}</span>
+   </div>`}).join(""):`<p class="foot">Nothing in this filter.</p>`}
+ </div>
+ <div class="hr"></div>
+ <h3 class="sec">Add your own</h3>
+ <p class="sec-note">Words you meet in the wild stick better than words from a list. Add them here and they join the review queue.</p>
+ <div class="addrow">
+   <input type="text" id="v-fr" placeholder="le mot français" maxlength="60">
+   <input type="text" id="v-en" placeholder="English meaning" maxlength="60">
+   <input type="text" id="v-ex" placeholder="example sentence (optional)" maxlength="120">
+   <button id="v-add">Add</button>
+ </div>
+ <p class="foot" style="margin-top:14px"><b>How review works.</b> Five boxes. Get a card right and it moves up — you'll see it again in 1, 3, 7, then 21 days. Get it wrong and it drops to box 0 and comes back today. Twenty cards a day is about eight minutes, and it counts as Reading in your daily log.</p>`;
+}
+function paneMedia(){
+ return `<h3 class="sec">Films, séries, musique — graded</h3>
+ <p class="sec-note">Watch one level below where you think you are. Subtitles in French, not English — English subtitles turn listening practice into reading practice.</p>
+ <div class="filters">${["ALL","A1","A2","B1","B2"].map(f=>`<button class="chip" data-m="${f}" aria-pressed="${mFilter===f}">${f}</button>`).join("")}</div>
+ <div class="mgrid">
+ ${MEDIA.filter(m=>mFilter==="ALL"||m.lv===mFilter).map(m=>`<div class="m">
+   <div class="m-t">${m.u?`<a href="${m.u}" target="_blank" rel="noopener" style="color:var(--bic);text-decoration:none">${esc(m.t)}</a>`:esc(m.t)}</div>
+   <div class="m-meta">${m.lv} · ${esc(m.k)}</div>
+   <div class="m-d">${esc(m.d)}</div></div>`).join("")}
+ </div>
+ <div class="hr"></div>
+ <div class="res"><span class="t">Drills</span><a href="${R.lyrics.u}" target="_blank" rel="noopener">${R.lyrics.t}</a><span class="d"> — ${R.lyrics.d}</span></div>
+ <div class="res"><span class="t">Listening</span><a href="${R.inner.u}" target="_blank" rel="noopener">${R.inner.t}</a><span class="d"> — ${R.inner.d}</span></div>
+ <div class="res"><span class="t">Listening</span><a href="${R.coffee.u}" target="_blank" rel="noopener">${R.coffee.t}</a><span class="d"> — ${R.coffee.d}</span></div>
+ <div class="res"><span class="t">Video</span><a href="${R.easy.u}" target="_blank" rel="noopener">${R.easy.t}</a><span class="d"> — ${R.easy.d}</span></div>
+ <div class="res"><span class="t">Video</span><a href="${R.piece.u}" target="_blank" rel="noopener">${R.piece.t}</a><span class="d"> — ${R.piece.d}</span></div>
+ <div class="res"><span class="t">Video</span><a href="${R.arte.u}" target="_blank" rel="noopener">${R.arte.t}</a><span class="d"> — ${R.arte.d}</span></div>`;
+}
+
+function paneProgress(){
+ const t=totals(),e=estimate(),acc=topicAcc();
+ const rows=Object.entries(acc).sort((a,b)=>a[1]-b[1]);
+ const days=Object.keys(S.log).filter(d=>mins(d)>0).length;
+ const elapsed=Math.max(1,dbet(START,today())+1);
+ const rate=t.all/60/elapsed;
+ const nextL=LEVELS[Math.min(e.idx+1,3)];
+ const need=Math.max(0,nextL.h-t.h);
+ const eta=rate>0?shift(today(),Math.ceil(need/rate)):null;
+ const out=[];
+
+ if(t.outRatio!==null&&t.outRatio<0.25&&t.all>180)
+   out.push(`<div class="callout"><b>Output is low.</b> ${Math.round(t.outRatio*100)}% of your minutes are speaking or writing. Below 25%, comprehension climbs and production stalls — which is exactly the gap your first test showed.</div>`);
+ else if(t.outRatio!==null&&t.outRatio>=0.25)
+   out.push(`<div class="callout ok"><b>Output ratio healthy.</b> ${Math.round(t.outRatio*100)}% of minutes are production.</div>`);
+ if(rate>0&&rate<1.2&&elapsed>6)
+   out.push(`<div class="callout"><b>Run rate is ${rate.toFixed(1)} h/day</b> against a 2 h plan. At this pace ${nextL.n} lands around ${eta?fmt(eta):"—"}. Not a problem — just don't plan against the 2 h number if you're living at ${rate.toFixed(1)}.</div>`);
+ rows.slice(0,3).forEach(([topic,a])=>{if(a<0.7)
+   out.push(`<div class="callout"><b>Lagging: ${esc(topic)}</b> — ${Math.round(a*100)}% correct. Look this one up on <a href="${R.law.u}" target="_blank" rel="noopener" style="color:var(--bic)">Lawless French</a> and drill it on <a href="${R.ff.u}" target="_blank" rel="noopener" style="color:var(--bic)">Français Facile</a>.</div>`)});
+ if(!out.length)out.push(`<div class="callout ok"><b>Not enough data yet.</b> Log a few days and answer 15–20 drill questions — the diagnosis needs both hours and accuracy to say anything honest.</div>`);
+
+ return `<h3 class="sec">Where you stand</h3>
+ <div class="score" style="margin-bottom:18px">
+   <div><span class="lbl">Hours</span><span>${t.h.toFixed(1)}</span></div>
+   <div><span class="lbl">Days active</span><span>${days}/${elapsed}</span></div>
+   <div><span class="lbl">Run rate</span><span>${rate.toFixed(1)}</span></div>
+   <div><span class="lbl">Output</span><span>${t.outRatio===null?"—":Math.round(t.outRatio*100)+"%"}</span></div>
+   <div><span class="lbl">To ${nextL.n}</span><span>${need.toFixed(0)}h</span></div>
+ </div>
+ ${out.join("")}
+ <div class="hr"></div>
+ <h3 class="sec">Accuracy by topic</h3>
+ <p class="sec-note">Only topics with 3+ answers appear. Weakest first.</p>
+ <div class="bars">
+ ${rows.length?rows.map(([topic,a])=>`<div class="brow">
+   <span class="bname">${esc(topic)}</span>
+   <span class="btrack"><span class="bfill ${a<0.6?"low":a<0.8?"mid":""}" style="width:${Math.round(a*100)}%"></span></span>
+   <span class="bpct">${Math.round(a*100)}%</span></div>`).join(""):`<p class="foot">Nothing yet — go drill.</p>`}
+ </div>
+ <div class="hr"></div>
+ <p class="foot"><b>How the level estimate works.</b> A level is credited only when you clear both gates: the CEFR hour benchmark (A1 90h, A2 200h, B1 400h, B2 650h cumulative) <em>and</em> 75%+ accuracy across at least 12 drill questions at that level. Hours without accuracy means time spent, not level gained; accuracy without hours means you've learned rules you can't yet use at speed.<br><br>
+ <b>Starting at A2</b> credits you the 90 hours that A1 normally takes, so the ladder begins part-filled and your next real milestone is A2 at 200 cumulative hours — about 110 logged hours away, or roughly two months at 2 h/day. B1 then lands around March 2027 and B2 in late 2027. The credit is an assumption about what you already know, and the A2 drills are what test it: if accuracy there sits under 70% after 20 questions, the assumption was wrong and you should switch the start level back to A1.<br><br>
+ The only unbiased check is a <a href="${R.delf.u}" target="_blank" rel="noopener" style="color:var(--bic)">DELF past paper</a>. Sit A1 in September and A2 in December — this tracker estimates, the exam decides.</p>`;
+}
+function fmt(s){return new Date(s+"T00:00:00").toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
+
+/* ---------- events ---------- */
+function wire(){
+ document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render()});
+ document.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{mFilter=b.dataset.m;render()});
+ document.querySelectorAll("[data-u]").forEach(b=>b.onclick=()=>{uFilter=b.dataset.u;render()});
+ document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>{qFilter=b.dataset.q;cur=null;render()});
+ document.querySelectorAll("[data-start]").forEach(b=>b.onclick=()=>{S.startLv=b.dataset.start;uFilter=b.dataset.start;qFilter=b.dataset.start;save();render()});
+ document.querySelectorAll("[data-done]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();const i=b.dataset.done;S.done[i]=!S.done[i];save();render()});
+ document.querySelectorAll("[data-bump]").forEach(b=>b.onclick=()=>{
+   const inp=document.querySelector(`[data-k="${b.dataset.bump}"]`);
+   inp.value=Math.max(0,(parseInt(inp.value,10)||0)+parseInt(b.dataset.by,10));
+ });
+ document.querySelectorAll("[data-vmode]").forEach(b=>b.onclick=()=>{vMode=b.dataset.vmode;render()});
+ document.querySelectorAll("[data-band]").forEach(b=>b.onclick=()=>{vBand=+b.dataset.band;render()});
+ const fw=document.getElementById("freqwrap");
+ if(fw){
+   const hit=el=>{if(!el||!el.dataset.w)return;const w=el.dataset.w;
+     S.known[w]=!S.known[w];el.classList.toggle("kn",!!S.known[w]);save();
+     const c=document.getElementById("kc");if(c)c.textContent=knownCount()+" / 5000";};
+   fw.onclick=ev=>hit(ev.target.closest(".fw"));
+   fw.onkeydown=ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();hit(ev.target.closest(".fw"))}};
+ }
+ document.querySelectorAll("[data-vlv]").forEach(b=>b.onclick=()=>{vLv=b.dataset.vlv;render()});
+ document.querySelectorAll("[data-vth]").forEach(b=>b.onclick=()=>{vTheme=b.dataset.vth;render()});
+ const vs=document.getElementById("v-start");
+ if(vs)vs.onclick=()=>{vMode="review";pickCard();render()};
+ const vst=document.getElementById("v-stop");
+ if(vst)vst.onclick=()=>{vMode="browse";render()};
+ const vsh=document.getElementById("v-show");
+ if(vsh)vsh.onclick=()=>{vShown=true;render()};
+ const vok=document.getElementById("v-ok");
+ if(vok)vok.onclick=()=>{gradeCard(true);pickCard();render()};
+ const vag=document.getElementById("v-again");
+ if(vag)vag.onclick=()=>{gradeCard(false);pickCard();render()};
+ const vad=document.getElementById("v-add");
+ if(vad)vad.onclick=()=>{
+   const fr=document.getElementById("v-fr").value.trim(),en=document.getElementById("v-en").value.trim(),ex=document.getElementById("v-ex").value.trim();
+   if(!fr||!en)return;
+   S.mine.push({fr,en,ex,lv:vLv==="ALL"?"A2":vLv});vTheme="Mes mots";save();render();
+ };
+ const ud=document.getElementById("unit-done");
+ if(ud)ud.onclick=()=>{const {i}=firstUnit();S.done[i]=true;save();render()};
+ document.querySelectorAll("[data-unit]").forEach(h=>{
+   const go=()=>{const i=h.dataset.unit;S.open[i]=!S.open[i];save();render()};
+   h.onclick=go;h.onkeydown=ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();go()}};
+ });
+ const sd=document.getElementById("save-day");
+ if(sd)sd.onclick=()=>{const e={};document.querySelectorAll("[data-k]").forEach(i=>{e[i.dataset.k]=Math.max(0,parseInt(i.value,10)||0)});S.log[today()]=e;save();render()};
+ const st=document.getElementById("start-q");
+ if(st)st.onclick=()=>{pickQ();document.getElementById("qbox").innerHTML=renderQ();wireQ()};
+ wireQ();
+}
+function wireQ(){
+ document.querySelectorAll("[data-opt]").forEach(b=>b.onclick=()=>{
+   if(answered)return;answered=true;
+   const q=Q[cur],pick=+b.dataset.opt,ok=pick===q[3];
+   document.querySelectorAll("[data-opt]").forEach((x,i)=>{if(i===q[3])x.classList.add("right");else if(i===pick)x.classList.add("wrong")});
+   const rec=S.quiz[q[0]]||{r:0,w:0};ok?rec.r++:rec.w++;S.quiz[q[0]]=rec;save();
+   document.getElementById("expl").innerHTML=`<div class="expl"><b>${ok?"Oui.":"Non — "+esc(q[2][q[3]])+"."}</b> ${esc(q[4])}</div>
+     <button id="next-q" style="margin-top:12px">Next question</button>
+     <button class="ghost" id="stop-q" style="margin-top:12px;margin-left:6px">Done</button>`;
+   document.getElementById("next-q").onclick=()=>{pickQ();document.getElementById("qbox").innerHTML=renderQ();wireQ()};
+   document.getElementById("stop-q").onclick=()=>{cur=null;render()};
+ });
+}
+load().then(render);
+})();
+</script>
+
+<script>
+if("serviceWorker" in navigator){
+  window.addEventListener("load",function(){
+    navigator.serviceWorker.register("./sw.js").catch(function(){/* offline cache unavailable — app still works */});
+  });
+}
+</script>
+<script src="./config.js"></script>
+<script src="./sync.js"></script>
+</body>
+</html>

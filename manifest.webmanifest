@@ -1,0 +1,15 @@
+{
+  "name": "Cahier de français — A1 to B2",
+  "short_name": "Français",
+  "description": "French study system: curriculum, grammar drills, vocabulary bank and CEFR tracking.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#EFEFE9",
+  "theme_color": "#101A26",
+  "icons": [
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

@@ -1051,29 +1051,41 @@
       stroke: rgba(143,166,142,0.18);
       stroke-width: 0.6;
     }
+    /* Default state is the FINAL visible state — sage-filled, no JS
+       required. The reveal below is a pure CSS animation that plays
+       once on load; it never gates whether the map is visible. */
     .coverage-map .r-na,
     .coverage-map .r-uki,
     .coverage-map .r-eu,
     .coverage-map .r-me,
     .coverage-map .r-apac {
-      fill: rgba(248,246,242,0.08);
-      stroke: rgba(143,166,142,0.18);
+      fill: #8FA68E;
+      stroke: rgba(248,246,242,0.35);
       stroke-width: 0.6;
-      transition: fill 0.9s var(--ease), stroke 0.9s var(--ease);
+      animation: region-in 0.9s var(--ease) both;
     }
-    .coverage-map.is-in .r-na    { fill: #8FA68E; stroke: rgba(248,246,242,0.35); transition-delay: 0ms;   }
-    .coverage-map.is-in .r-uki   { fill: #8FA68E; stroke: rgba(248,246,242,0.35); transition-delay: 180ms; }
-    .coverage-map.is-in .r-eu    { fill: #8FA68E; stroke: rgba(248,246,242,0.35); transition-delay: 360ms; }
-    .coverage-map.is-in .r-me    { fill: #8FA68E; stroke: rgba(248,246,242,0.35); transition-delay: 540ms; }
-    .coverage-map.is-in .r-apac  { fill: #8FA68E; stroke: rgba(248,246,242,0.35); transition-delay: 720ms; }
+    .coverage-map .r-na   { animation-delay: 0ms;   }
+    .coverage-map .r-uki  { animation-delay: 180ms; }
+    .coverage-map .r-eu   { animation-delay: 360ms; }
+    .coverage-map .r-me   { animation-delay: 540ms; }
+    .coverage-map .r-apac { animation-delay: 720ms; }
+    @keyframes region-in {
+      from { fill: rgba(248,246,242,0.08); stroke: rgba(143,166,142,0.18); }
+      to   { fill: #8FA68E; stroke: rgba(248,246,242,0.35); }
+    }
 
+    /* Pins: visible and pulsing by default, independent of any
+       scroll-triggered class. */
     .coverage-pin .pin-dot {
       fill: #8FA68E;
-      opacity: 0;
-      transition: opacity 0.5s var(--ease);
-      transition-delay: calc(var(--pin-delay, 0ms) + 700ms);
+      opacity: 1;
+      animation: dot-in 0.5s var(--ease) both;
+      animation-delay: calc(var(--pin-delay, 0ms) + 700ms);
     }
-    .coverage-map.is-in .coverage-pin .pin-dot { opacity: 1; }
+    @keyframes dot-in {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
     .coverage-pin .pin-ring {
       fill: none;
       stroke: #8FA68E;
@@ -1081,9 +1093,8 @@
       opacity: 0;
       transform-origin: center;
       transform-box: fill-box;
-    }
-    .coverage-map.is-in .coverage-pin .pin-ring {
-      animation: pin-pulse 2.6s ease-out calc(var(--pin-delay, 0ms) + 700ms) infinite;
+      animation: pin-pulse 2.6s ease-out infinite;
+      animation-delay: calc(var(--pin-delay, 0ms) + 700ms);
     }
     @keyframes pin-pulse {
       0%   { opacity: 0.55; transform: scale(1); }
@@ -1095,9 +1106,9 @@
       .coverage-map .r-me, .coverage-map .r-apac {
         fill: #8FA68E !important;
         stroke: rgba(248,246,242,0.35) !important;
-        transition: none !important;
+        animation: none !important;
       }
-      .coverage-pin .pin-dot { opacity: 1 !important; transition: none !important; }
+      .coverage-pin .pin-dot { opacity: 1 !important; animation: none !important; }
       .coverage-pin .pin-ring { animation: none !important; opacity: 0 !important; }
     }
     .coverage-pills {
